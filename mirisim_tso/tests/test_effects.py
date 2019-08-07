@@ -31,8 +31,11 @@ def test_response_drift(input_ramp, flux, t_0, frame_time):
     frame_sample = np.arange(nb_frames)
     original_ramp = frame_sample * flux * frame_time
 
-    ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t_0, flux, frame_time)
-    ramp_i = original_ramp + ramp_difference
+    transformed_ramp = original_ramp[np.newaxis, :, np.newaxis, np.newaxis]
+    transformed_flux = np.full((1,1), flux)
+
+    ramp_difference = mirisim_tso.effects.response_drift(transformed_ramp, t_0, transformed_flux, frame_time)
+    ramp_i = original_ramp + ramp_difference[:, 0, 0]
 
     # We can't_0 compare the first frame_time because of the ramp offset in test data.
     # So first frame_time will always be perfectly 0 in test data
