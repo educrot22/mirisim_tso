@@ -1,143 +1,45 @@
 import mirisim_tso
 import numpy as np
+import pytest
+import numpy.testing as npt
 
-def test_response_drift():
+testdata = [  # flux in DN/s, t_0 in s, frame time in s, mean ramp (DN)
+    (500., 3600., 0.19,  np.array([2, 3, 4, 5])),
+]
+
+@pytest.mark.parametrize("flux, t_0, frame_time, input_ramp", testdata)
+def test_response_drift(input_ramp, flux, t_0, frame_time):
     """
     Test response drift effect
 
-    :return:
+    Parameters
+    ----------
+    input_ramp: np.ndarray
+        ramp from ground testing
+    flux: float
+        mean flux in DN/s associated with the input
+    t_0: float
+        start time of the ramp, compared to the start of the observation (s)
+
+    Returns
+    -------
+
     """
 
-    import matplotlib.pyplot as plt
-
-    t_0 = 60  # seconds
-    frame = 0.19  # seconds
-    nb_frames = 25
-    flux = 10  # DN/s
+    nb_frames = input_ramp.size
 
     frame_sample = np.arange(nb_frames)
-    original_ramp = frame_sample * flux * frame
-    time_sample = frame_sample * frame
+    original_ramp = frame_sample * flux * frame_time
 
-    time = []
-    time_flux = []
-    for t_0 in np.arange(0, 12000, 100):
+    ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t_0, flux, frame_time)
+    ramp_i = original_ramp + ramp_difference
 
-        ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t_0, flux, frame)
-        ramp_i = original_ramp + ramp_difference
+    # We can't compare the first frame because of the ramp offset in test data.
+    # So first frame will always be perfectly 0 in test data
+    ref_ramp = input_ramp[1:] - input_ramp[0]
 
-        flux_i = (ramp_i.max() - ramp_i.min())/time_sample.max()
-        #(fit_flux_i, dummy) = np.polyfit(time_sample, ramp_i, 1)
+    ramp_i = ramp_i[1:]
 
-        time.append(t_0)
-        time_flux.append(flux_i)
+    npt.assert_approx_equal(ramp_i, ref_ramp)
 
 
-
-    fig = plt.figure()
-    ax = fig.add_subplot(2, 1, 1)
-    ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t_0, flux, frame)
-    ax.plot(frame_sample, original_ramp, label="Original Ramp")
-    ax.plot(frame_sample, original_ramp+ramp_difference, label="response drift applied")
-    #ax.plot(frame_sample, ramp_difference, label="response drift difference")
-    ax.legend()
-    ax = fig.add_subplot(2, 1, 2)
-    ax.plot([0, 12000], [flux, flux], label="Input flux")
-    ax.plot(time, time_flux, label="RD corrected flux")
-    ax.legend()
-#    plt.savefig("response_drift.png")
-
-
-
-def test_anneal_recovery():
-    """
-    Test response drift effect
-
-    :return:
-    """
-
-    import matplotlib.pyplot as plt
-
-    frame = 0.19  # seconds
-    nb_frames = 25
-    flux = 10  # DN/s
-    anneal_time = 0 #s
-
-    frame_sample = np.arange(nb_frames)
-    original_ramp = frame_sample * flux * frame
-    time_sample = frame_sample * frame
-
-    time = []
-    time_flux = []
-    for t_0 in np.arange(0, 2000, 10):
-
-        ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, anneal_time, t_0)
-        ramp_i = original_ramp + ramp_difference
-
-        flux_i = (ramp_i.max() - ramp_i.min())/time_sample.max()
-        #(fit_flux_i, dummy) = np.polyfit(time_sample, ramp_i, 1)
-
-        time.append(t_0)
-        time_flux.append(flux_i)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(2, 1, 1)
-    ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, anneal_time, t_0)
-    ax.plot(frame_sample, original_ramp, label="Original Ramp")
-    ax.plot(frame_sample, original_ramp+ramp_difference,  label="Anneal recovery applied")
-    #ax.plot(frame_sample, ramp_difference, label="response drift difference")
-    ax.legend()
-    ax = fig.add_subplot(2, 1, 2)
-    ax.plot([0, 2000], [flux, flux], label="Input flux")
-    ax.plot(time, time_flux, label="AR corrected flux")
-    ax.legend()
-    plt.savefig("anneal.png")
-
-
-def test_idle_recovery():
-    """
-    Test response drift effect
-
-    :return:
-    """
-
-    import matplotlib.pyplot as plt
-
-    t_0 = 60  # seconds
-    frame = 0.19  # seconds
-    nb_frames = 25
-    idle_time = 2000 #s
-    flux = 500  # DN/s
-
-    nb_frames = 25
-    frame_sample = np.arange(nb_frames)
-    original_ramp = frame_sample * flux * frame
-    time_sample = frame_sample * frame
-
-    time = []
-    time_flux = []
-    for t_0 in np.arange(0, 12000, 100):
-
-        ramp_difference = mirisim_tso.effects.idle_recovery(original_ramp, idle_time, t_0, flux, frame)
-        ramp_i = original_ramp + ramp_difference
-
-        flux_i = (ramp_i.max() - ramp_i.min())/time_sample.max()
-        #(fit_flux_i, dummy) = np.polyfit(time_sample, ramp_i, 1)
-
-        time.append(t_0)
-        time_flux.append(flux_i)
-
-
-
-    fig = plt.figure()
-    ax = fig.add_subplot(2, 1, 1)
-    ramp_difference = mirisim_tso.effects.idle_recovery(original_ramp, idle_time, t_0, flux, frame)
-    ax.plot(frame_sample, original_ramp, label="Original Ramp")
-    ax.plot(frame_sample, original_ramp+ramp_difference, label="idle recovery applied")
-    #ax.plot(frame_sample, ramp_difference, label="response drift difference")
-    ax.legend()
-    ax = fig.add_subplot(2, 1, 2)
-    ax.plot([0, 12000], [flux, flux], label="Input flux")
-    ax.plot(time, time_flux, label="IR corrected flux")
-    ax.legend()
-    plt.savefig("idle_recovery.png")
