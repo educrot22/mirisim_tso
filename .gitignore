@@ -1,4 +1,5 @@
 *.png
+MIRI_1Integration/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

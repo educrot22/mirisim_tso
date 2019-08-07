@@ -40,6 +40,7 @@ def test_response_drift(input_ramp, flux, t_0, frame_time):
 
     ramp_i = ramp_i[1:]
 
-    npt.assert_approx_equal(ramp_i, ref_ramp)
+    # Note that the reference ramp is the difference between the original ramp, and its first element (offset substraction)
+    npt.assert_array_almost_equal(ramp_i, ref_ramp)
 
 
