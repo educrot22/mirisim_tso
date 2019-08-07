@@ -39,10 +39,18 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
-    alpha1 = -0.251006324468 * signal  + 256.617781046
-    amp1   = -0.000470839463392 * np.exp(0.0138190609414 * signal) + -9.39756705304
-    alpha2 = (11.5503579674 * 236.879448705**2 * signal + 165016897.075) / (236.879448705**2 + (signal - 241.72012081)**2)
-    amp2   = -0.0387088940065 * signal + -0.517555367969
+    # For signal < 1000
+    lt1000_selection = signal < 1000
+
+    alpha1 = np.ones_like(signal)
+    alpha2 = np.ones_like(signal)
+    amp1 = np.zeros_like(signal)
+    amp2 = np.zeros_like(signal)
+
+    alpha1[lt1000_selection] = -0.251006324468 * signal[lt1000_selection]  + 256.617781046
+    amp1[lt1000_selection]   = -0.000470839463392 * np.exp(0.0138190609414 * signal[lt1000_selection]) + -9.39756705304
+    alpha2[lt1000_selection] = (11.5503579674 * 236.879448705**2 * signal[lt1000_selection] + 165016897.075) / (236.879448705**2 + (signal[lt1000_selection] - 241.72012081)**2)
+    amp2[lt1000_selection]   = -0.0387088940065 * signal[lt1000_selection] + -0.517555367969
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
