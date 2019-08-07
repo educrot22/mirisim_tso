@@ -54,7 +54,7 @@ def print_formula(a, y, x, fit_form=None,):
     elif fit_form=="lin":
         print("Function | ", y, "(", x, ") = ", a[0],"x ", x, " +", a[1], "\n\n")
     elif fit_form=="rene":
-        print("Function | ", y, "(", x, ") = (", a[0]," x ", a[1],"^2 x ", x," +", a[3],") / (", a[1],"^2 + (", x," - ", a[2],")^2 )\n\n")
+        print("Function | ", y, "(", x, ") = (", a[0]," x ", a[1]," x ", x," +", a[3],") / (", a[1]," + (", x," - ", a[2],")^2 )\n\n")
     elif fit_form=="poly":
         print("Function | ", y, "(", x, ") = ", a[0],"x ", x, "^2 +", a[1], "x ", x, " +",a[2],"\n\n")
 

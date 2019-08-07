@@ -22,8 +22,9 @@ def read_det_image(directory, x, y):
         hypercube_image=hdulist[1].data
         hdulist.close()
 
-        original_ramp = hypercube_image[5, :, x, y]
-        original_ramp = original_ramp - hypercube_image[5, :, 4, 4]
+        # Need to add a test to check if we have only one integration. If yes, hypercube has 3 dimensions
+        original_ramp = hypercube_image[:, x, y]
+        original_ramp = original_ramp - hypercube_image[:, 4, 4]
         return original_ramp
 
     else:

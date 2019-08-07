@@ -29,7 +29,3 @@ frame = 0.19  # seconds
 signal = mirisim_tso.utils.extract_signal(illum_models_directory, x, y)
 original_ramp = mirisim_tso.utils.read_det_image(det_images_directory, x, y)
 ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t, signal, frame)
-original_ramp = original_ramp
-print(original_ramp.mean())
-print(ramp_difference)
-print("\n\n")
