@@ -1,7 +1,12 @@
 import os
 from astropy.io import fits
 
-def read_det_image(directory, x, y):
+import logging
+import collections
+
+LOG = logging.getLogger(__name__)
+
+def read_det_image(filename):
     """
     . Function to read the variable if it comes from a FITS file. Only takes |.fits containing detector image from
     MIRISim
@@ -9,30 +14,24 @@ def read_det_image(directory, x, y):
     . Adapted from exoNoodle project (exonoodle.utils)
 
     >>>> PARAMETERS
-    • directory     : String - Name of the entry directory containing the det_images to read
+    • illum_model_filename     : String - Name of the entry illum_model_filename containing the det_images to read
 
     >>>> RETURNS
     • original_ramp : np.array - values in DN of a ramp integration
     """
-    filename=os.path.join(directory, "det_image_seq1_MIRIMAGE_P750Lexp1.fits")
-    (name, ext) = os.path.splitext(filename)
 
-    if ext==".fits":
-        hdulist      = fits.open(filename)
+    try:
+        hdulist = fits.open(filename)
         hypercube_image=hdulist[1].data
         hdulist.close()
 
-        # Need to add a test to check if we have only one integration. If yes, hypercube has 3 dimensions
-        original_ramp = hypercube_image[:, x, y]
-        original_ramp = original_ramp - hypercube_image[:, 4, 4]
-        return original_ramp
-
-    else:
-        print("ERROR :: The illum_model file shall be a .fits file !")
-        raise ValueError
+        return hypercube_image
+    except OSError:
+        LOG.error("The illum_model file shall be a .fits file")
+        raise
 
 
-def read_illum_model(directory):
+def read_illum_model(illum_model_filename):
     """
     . Function to read the variable if it comes from a FITS file. Only takes |.fits containing illumination model
     from MIRISim
@@ -40,18 +39,18 @@ def read_illum_model(directory):
     . Adapted from exoNoodle project (exonoodle.utils)
 
     >>>> PARAMETERS
-    • directory     : String - Name of the entry directory containing the illum model to read
+    • illum_model_filename     : String - Name of the entry illum_model_filename containing the illum model to read
 
     >>>> RETURNS
     • slope_array   : np.array - values in electrons/s of the illumination
     """
-    filename=os.path.join(directory, "illum_model_1_MIRIMAGE_P750L.fits")
+    filename=os.path.join(illum_model_filename, "illum_model_1_MIRIMAGE_P750L.fits")
 
-    (name, ext) = os.path.splitext(filename)
+    (name, ext) = os.path.splitext(illum_model_filename)
     gain=5.75
 
     if ext==".fits":
-        hdulist      = fits.open(filename)
+        hdulist      = fits.open(illum_model_filename)
         illumination = hdulist['INTENSITY'].data
         hdulist.close()
         slope_array  = illumination/gain
@@ -165,3 +164,49 @@ def update_dict(d, u):
         else:
             d[k] = v
     return d
+
+
+def write_det_image_with_effects(original_path, new_data, extra_metadata, overwrite=True):
+    """
+    Based on the original .fits file, will overwrite the data cube with the one given
+    in parameter.
+    This .fits file will be stored in the same simulation folder, but in a new subfolder called
+    "det_images_post_processed".
+
+
+    Parameters
+    ----------
+    original_path: str
+        Full path (relative or absolute) with filename of the input det_image
+    new_data: np.ndarray
+        new data cube (nb_integrations, nb_groups, nb_y, nb_x)
+    extra_metadata: dict
+        New metadata you want to add in the future .fits file (as opposed to the original one)
+    overwrite: bool
+        [optional] By defaut, True. Do you want to overwrite the post_processed .fits file if it already exists?
+
+    Returns
+    -------
+    Write a new .fits file
+
+    """
+
+    original_name = os.path.basename(original_path)
+    original_dir = os.path.dirname(original_path)
+
+    hdulist = fits.open(original_path)
+
+    # Replace existing data
+    hdulist[1].data = new_data
+
+    metadata = hdulist[0].header
+
+    metadata.update(extra_metadata)
+
+    new_path = os.path.abspath(os.path.join(original_dir, os.path.pardir, "det_images_post_processed"))
+
+    if not os.path.isdir(new_path):
+        os.mkdir(new_path)
+
+    new_path = os.path.join(new_path, original_name)
+    hdulist.writeto(new_path, overwrite=overwrite)
