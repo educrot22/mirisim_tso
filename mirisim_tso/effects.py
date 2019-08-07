@@ -24,7 +24,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     signal
           illum_image value (either full image or value for one pixel) in DN/s
     frame
-         duration of a frame in seconds [default for MIRI-LRS = 0.19s]
+         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
 
     Returns
     -------
@@ -32,13 +32,12 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
                    Loss of signal in DN on the ramp.
 
     """
-    # Add a test for the original ramp, if it is a 3D array. (x, y, t)
+    # Add a test for the original ramp, if it is a 3D array. (x, y, t_0)
     # - If yes, we have a det_image, and the dispatch on the different formulas needs to be done with np.where()
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
 
-
-    nb_frames = np.size(original_ramp)
+    (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
     alpha1 = -0.251006324468 * signal  + 256.617781046
     amp1   = -0.000470839463392 * np.exp(0.0138190609414 * signal) + -9.39756705304
@@ -46,11 +45,15 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     amp2   = -0.0387088940065 * signal + -0.517555367969
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
+    t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
 
-    ramp_difference_t_0 = (amp1 * alpha1) * np.exp(-t_0 / alpha1) + (amp2 * alpha2) * np.exp(-t_0 / alpha2)
+    prefactor1 = amp1 * alpha1
+    prefactor2 = amp2 * alpha2
+
+    ramp_difference_t_0 = prefactor1 * np.exp(-t_0 / alpha1) + prefactor2 * np.exp(-t_0 / alpha2)
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
-    ramp_difference = ramp_difference_t_0 - (amp1 * alpha1) * np.exp(-t / alpha1) - (amp2 * alpha2) * np.exp(-t / alpha2)
+    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1) - prefactor2 * np.exp(-t / alpha2)
 
     LOG.debug("response_drift() | computed with success")
 
@@ -70,7 +73,7 @@ def anneal_recovery(original_ramp, anneal_time, t_0, frame=0.19):
     t_0
         time since beginning of the observation in seconds
     frame
-         duration of a frame in seconds [default for MIRI-LRS = 0.19s]
+         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
 
     Returns
     -------
@@ -111,7 +114,7 @@ def idle_recovery(original_ramp, idle_time, t_0, signal, frame=0.19):
     signal
           illum_image value (either full image or value for one pixel) in DN/s
     frame
-         duration of a frame in seconds [default for MIRI-LRS = 0.19s]
+         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
 
     Returns
     -------

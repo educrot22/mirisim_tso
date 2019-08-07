@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import numpy.testing as npt
 
-testdata = [  # flux in DN/s, t_0 in s, frame time in s, mean ramp (DN)
+testdata = [  # flux in DN/s, t_0 in s, frame_time time in s, mean ramp (DN)
     (500., 3600., 0.19,  np.array([2, 3, 4, 5])),
 ]
 
@@ -34,8 +34,8 @@ def test_response_drift(input_ramp, flux, t_0, frame_time):
     ramp_difference = mirisim_tso.effects.response_drift(original_ramp, t_0, flux, frame_time)
     ramp_i = original_ramp + ramp_difference
 
-    # We can't compare the first frame because of the ramp offset in test data.
-    # So first frame will always be perfectly 0 in test data
+    # We can't_0 compare the first frame_time because of the ramp offset in test data.
+    # So first frame_time will always be perfectly 0 in test data
     ref_ramp = input_ramp[1:] - input_ramp[0]
 
     ramp_i = ramp_i[1:]
