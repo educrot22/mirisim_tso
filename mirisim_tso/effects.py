@@ -4,7 +4,7 @@ import numpy as np
 from . import utils
 
 import logging
-LOG = logging.getLogger('mirisim_tso.utils')
+LOG = logging.getLogger(__name__)
 
 def response_drift(original_ramp, t_0, signal, frame=0.19):
     """
@@ -14,6 +14,10 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
         - 0 -> 1000    : 2 exponentials
         - 1000 -> 5000 : 1 exponential
         - over 5000    : off (no influence)
+
+    /!\ Warning: Multiple integrations per file are not supported right now. The problem will come
+                 from the t array, because for each integration you need to add the duration of
+                 all the previous integrations in the file
 
     Parameters
     ----------
@@ -68,7 +72,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     return ramp_difference
 
 
-def anneal_recovery(original_ramp, anneal_time, t_0, frame=0.19):
+def anneal_recovery(original_ramp, t_0, frame, config):
     """
     Computes the anneal recovery effect on the ramp. Coefficients values come from JPL tests of 2019.
 
@@ -76,12 +80,12 @@ def anneal_recovery(original_ramp, anneal_time, t_0, frame=0.19):
     ----------
     original_ramp
                  Original ramp from MIRISim det_image in DN
-    anneal_time
-               time between the end of the anneal phase and the start of the observation in seconds
-    t_0
+    t_0: float
         time since beginning of the observation in seconds
-    frame
-         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
+    frame: float
+         duration of a frame_time in seconds
+    config: dict
+        Configuration file for the code
 
     Returns
     -------
@@ -89,6 +93,10 @@ def anneal_recovery(original_ramp, anneal_time, t_0, frame=0.19):
                    Loss of signal in DN on the ramp.
 
     """
+
+    # time between the end of the anneal phase and the start of the observation in seconds
+    anneal_time = config["anneal_recovery"]["time"]
+
     nb_frames = np.size(original_ramp)
 
     alpha1 = 0.005051236714489755
@@ -107,7 +115,7 @@ def anneal_recovery(original_ramp, anneal_time, t_0, frame=0.19):
     return ramp_difference
 
 
-def idle_recovery(original_ramp, idle_time, t_0, signal, frame=0.19):
+def idle_recovery(original_ramp, idle_time, t_0, signal, frame, config):
     """
     Computes the idle recovery effect on the ramp. Coefficients values come from JPL tests of 2019.
 
@@ -115,14 +123,14 @@ def idle_recovery(original_ramp, idle_time, t_0, signal, frame=0.19):
     ----------
     original_ramp
                  Original ramp from MIRISim det_image in DN
-    idle_time
-             duration onf the idle phase before the observation began in seconds
-    t_0
+    t_0: float
         time since beginning of the observation in seconds
-    signal
+    signal: np.ndarray
           illum_image value (either full image or value for one pixel) in DN/s
-    frame
-         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
+    frame: float
+         duration of a frame_time in seconds
+    config: dict
+        Configuration file for the code
 
     Returns
     -------
@@ -130,10 +138,14 @@ def idle_recovery(original_ramp, idle_time, t_0, signal, frame=0.19):
                    Loss of signal in DN on the ramp.
 
     """
+
+    # duration onf the idle phase before the observation began in seconds
+    idle_time = config["idle_recovery"]["duration"]
+
     nb_frames = np.size(original_ramp)
 
     alpha1 = 2975790.21677 * np.exp( -0.0173557837941 * signal ) + 1133.82032361
-    amp1   = ((2.04271769088e-05 * signal**2 + -0.0166816654355 * signal + 4.08114118945)/2011.9)*idle_time
+    amp1   = ((2.04271769088e-05 * signal**2 + -0.0166816654355 * signal + 4.08114118945)/2011.9) * idle_time
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     ramp_difference_t_0 = (amp1 * alpha1) * np.exp(-t_0 / alpha1)
@@ -143,3 +155,28 @@ def idle_recovery(original_ramp, idle_time, t_0, signal, frame=0.19):
 
     LOG.debug("idle_recovery() | computed with success")
     return ramp_difference
+
+
+def poisson_noise(original_ramp):
+    """
+    Compute Poisson noise on all integration of a det_image data cube.
+
+    Parameters
+    ----------
+    original_ramp
+                 Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
+
+    Returns
+    -------
+    data cube with Poisson noise added
+
+    """
+    #TODO check negative values and decide what to do.
+    # Not working at the moment
+    frame_differences = np.diff(original_ramp, axis=1)
+
+    single_frame_noise = np.random.poisson(frame_differences)
+
+    original_ramp += np.cumsum(single_frame_noise, axis=1)
+
+    return original_ramp

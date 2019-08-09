@@ -4,6 +4,11 @@ from astropy.io import fits
 import logging
 import collections
 
+import sys
+import validate
+import pkg_resources
+import configobj
+
 LOG = logging.getLogger(__name__)
 
 def read_det_image(filename):
@@ -23,9 +28,10 @@ def read_det_image(filename):
     try:
         hdulist = fits.open(filename)
         hypercube_image=hdulist[1].data
+        header = hdulist[0].header
         hdulist.close()
 
-        return hypercube_image
+        return hypercube_image, header
     except OSError:
         LOG.error("The illum_model file shall be a .fits file")
         raise
@@ -44,7 +50,6 @@ def read_illum_model(illum_model_filename):
     >>>> RETURNS
     • slope_array   : np.array - values in electrons/s of the illumination
     """
-    filename=os.path.join(illum_model_filename, "illum_model_1_MIRIMAGE_P750L.fits")
 
     (name, ext) = os.path.splitext(illum_model_filename)
     gain=5.75
@@ -210,3 +215,70 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, overwr
 
     new_path = os.path.join(new_path, original_name)
     hdulist.writeto(new_path, overwrite=overwrite)
+
+
+def get_nested(data, args):
+    """
+    Allow to get value in dictionnary tree
+
+    Used in ConfigObj validator
+
+    If ones want to get toto["section1"]["s2]["key"]
+    call:
+    value = get_nested(toto, ["section1", "s2", "key"])
+
+    Parameter:
+    :param dict data: input dict to get data on
+    :param list(str) args: list of keys to use recursively
+
+    :return: value corresponding to the list of keys
+    """
+    value = data.copy()
+    for key in args:
+        value = value.get(key)
+
+    return value
+
+
+def get_config(filename):
+    """
+    Read then validate and convert the input file
+    BEWARE there must be a file named 'configspec.ini' in the directory of kiss
+
+    :param str filename: .ini filename
+
+    :return ConfigObj:  config file
+    """
+
+    if not os.path.isfile(filename):
+        LOG.error("The file '{}' can't be found".format(filename))
+        sys.exit()
+
+    # Prepare to convert values in the config file
+    val = validate.Validator()
+    specfile = pkg_resources.resource_filename('mirisim_tso', 'configspec.ini')
+    configspec = configobj.ConfigObj(specfile, list_values=False)
+
+    config = configobj.ConfigObj(filename, configspec=configspec, raise_errors=True)
+
+    # Check and convert values in config.ini (i.e str to float or integer/bool)
+    results = config.validate(val, preserve_errors=True)
+
+    for entry in configobj.flatten_errors(config, results):
+
+        [section_list, key, error] = entry
+        section_list.append(key)
+
+        if not error:
+            msg = "The parameter %s was not in the config file\n" % key
+            msg += "Please check to make sure this parameter is present and there are no mis-spellings."
+            raise ValueError(msg)
+
+        if key is not None and isinstance(error, validate.VdtValueError):
+            option_string = get_nested(configspec, section_list)
+            msg = "The parameter {} was set to {} which is not one of the allowed values\n".format(
+                key, get_nested(config, section_list))
+            msg += "Please set the value to be in {}".format(option_string)
+            raise ValueError(msg)
+
+    return config
