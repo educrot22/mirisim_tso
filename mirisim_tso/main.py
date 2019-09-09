@@ -8,7 +8,7 @@ from . import effects
 import logging
 import sys
 import glob
-from astropy.io import fits
+from astropy.io import ascii
 
 from . import version
 
@@ -107,16 +107,14 @@ def sequential_lightcurve_post_treatment(folder, conf):
         idx = int(sim.split("_")[-1][:-1])
         simulation_index[sim] = idx
 
-    # Create time arrays
-    example_file = glob.glob(os.path.join(simulations[0], "det_images", "*.fits"))[0]
+    # Create time array
+    timedat = os.path.join(folder, "times.dat")
+    data = ascii.read(timedat)
+
+    t_start = data["t_start"].data
     simulation_start_time = {}
-    with fits.open(example_file) as example_hdu:
-        ref_meta = example_hdu[0].header
-
-        file_exposure_time = ref_meta["DURATION"]  # in seconds
-
-        for sim in simulations:
-            simulation_start_time[sim] = file_exposure_time * simulation_index[sim]  # in seconds
+    for sim in simulations:
+        simulation_start_time[sim] = t_start[simulation_index[sim]]
 
     # Run each simulation post treatment, one after the other
     for simulation in simulations:
