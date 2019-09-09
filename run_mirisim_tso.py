@@ -1,10 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Example of how to use the mirisim_tso package
 """
 
-import os
-
 import mirisim_tso
+
+mirisim_tso.utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
 
 simulation_name = "MIRI_1Integration"
 

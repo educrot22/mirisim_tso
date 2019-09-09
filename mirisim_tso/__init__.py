@@ -2,7 +2,7 @@
 
 from . import utils
 from . import effects
-from .main import single_simulation_post_treatment
+from .main import single_simulation_post_treatment, sequential_lightcurve_post_treatment
 
 from .version import __version__
 

@@ -251,8 +251,7 @@ def get_config(filename):
     """
 
     if not os.path.isfile(filename):
-        LOG.error("The file '{}' can't be found".format(filename))
-        sys.exit()
+        raise ValueError("The file '{}' can't be found".format(filename))
 
     # Prepare to convert values in the config file
     val = validate.Validator()
