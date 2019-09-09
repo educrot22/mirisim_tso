@@ -67,7 +67,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1) - prefactor2 * np.exp(-t / alpha2)
 
-    LOG.debug("response_drift() | computed with success")
+    LOG.debug("response_drift() | ramp shape : {}".format(ramp_difference.shape))
 
     return ramp_difference
 
@@ -96,26 +96,30 @@ def anneal_recovery(original_ramp, t_0, frame, config):
 
     # time between the end of the anneal phase and the start of the observation in seconds
     anneal_time = config["anneal_recovery"]["time"]
+    (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
-    nb_frames = np.size(original_ramp)
 
-    alpha1 = 0.005051236714489755
-    amp1   = 11.600852
-    alpha2 = 0.0010083051778396745
-    amp2   = 0.86786327
-
+    alpha1 = 0.005051236714489755 * np.ones((nb_y, nb_x))
+    amp1   = 11.600852 * np.ones((nb_y, nb_x))
+    alpha2 = 0.0010083051778396745 * np.ones((nb_y, nb_x))
+    amp2   = 0.86786327 * np.ones((nb_y, nb_x))
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
-    ramp_difference_t_0 = (amp1 * alpha1) * np.exp(-(t_0 + anneal_time) / alpha1) + (amp2 * alpha2) * np.exp(-(t_0 + anneal_time) / alpha2)
+    t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
+
+    prefactor1 = amp1 * alpha1
+    prefactor2 = amp2 * alpha2
+
+    ramp_difference_t_0 = prefactor1 * np.exp(-(t_0 + anneal_time) / alpha1) + prefactor2 * np.exp(-(t_0 + anneal_time) / alpha2)
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
-    ramp_difference = ramp_difference_t_0 - (amp1 * alpha1) * np.exp(-(t + anneal_time) * alpha1) - (amp2 * alpha2) * np.exp(-(t + anneal_time) * alpha2)
+    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-(t + anneal_time) * alpha1) - prefactor2 * np.exp(-(t + anneal_time) * alpha2)
 
-    LOG.debug("anneal_recovery() | computed with success")
+    LOG.debug("anneal_recovery() | ramp shape : {}".format(ramp_difference.shape))
     return ramp_difference
 
 
-def idle_recovery(original_ramp, idle_time, t_0, signal, frame, config):
+def idle_recovery(original_ramp, t_0, signal, frame, config):
     """
     Computes the idle recovery effect on the ramp. Coefficients values come from JPL tests of 2019.
 
@@ -141,19 +145,20 @@ def idle_recovery(original_ramp, idle_time, t_0, signal, frame, config):
 
     # duration onf the idle phase before the observation began in seconds
     idle_time = config["idle_recovery"]["duration"]
-
-    nb_frames = np.size(original_ramp)
+    (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
     alpha1 = 2975790.21677 * np.exp( -0.0173557837941 * signal ) + 1133.82032361
     amp1   = ((2.04271769088e-05 * signal**2 + -0.0166816654355 * signal + 4.08114118945)/2011.9) * idle_time
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
+    t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
+
     ramp_difference_t_0 = (amp1 * alpha1) * np.exp(-t_0 / alpha1)
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - (amp1 * alpha1) * np.exp(-t / alpha1)
 
-    LOG.debug("idle_recovery() | computed with success")
+    LOG.debug("idle_recovery() | ramp shape : {}".format(ramp_difference.shape))
     return ramp_difference
 
 
@@ -175,8 +180,9 @@ def poisson_noise(original_ramp):
     # Not working at the moment
     frame_differences = np.diff(original_ramp, axis=1)
 
-    single_frame_noise = np.random.poisson(frame_differences)
+    single_frame_noise = np.random.poisson(abs(frame_differences))
 
-    original_ramp += np.cumsum(single_frame_noise, axis=1)
+    noised_ramp += np.cumsum(single_frame_noise, axis=1)
 
-    return original_ramp
+    LOG.debug("idle_recovery() |  noised ramp shape : {}".format(noised_ramp.shape))
+    return noised_ramp

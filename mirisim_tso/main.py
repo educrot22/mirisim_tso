@@ -39,13 +39,14 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
         sys.exit()
 
 
-    utils.init_log(stdout_loglevel="INFO", file_loglevel="DEBUG")
+    utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
 
     det_images_filename = os.path.join(simulation_folder, "det_images", "det_image_seq1_MIRIMAGE_P750Lexp1.fits")
     illum_models_filename = os.path.join(simulation_folder, "illum_models", "illum_model_1_MIRIMAGE_P750L.fits")
 
     signal = utils.read_illum_model(illum_models_filename)
     original_ramp, header = utils.read_det_image(det_images_filename)
+    LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
     frame_time = header["TFRAME"]
 
@@ -67,6 +68,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
     if config_dict["noise"]["active"]:
         new_ramp = effects.poisson_noise(new_ramp)
 
+    LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
     metadatas = {'history':"Post processing with MIRISim TSO v{}".format(version.__version__)}
 
     # Write fits file

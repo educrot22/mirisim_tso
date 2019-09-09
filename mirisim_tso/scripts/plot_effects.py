@@ -53,6 +53,8 @@ def test_anneal_recovery():
     :return:
     """
 
+    conf = "post_treatment.ini"
+
     frame = 0.19  # seconds
     nb_frames = 25
     flux = 10  # DN/s
@@ -61,11 +63,12 @@ def test_anneal_recovery():
     frame_sample = np.arange(nb_frames)
     original_ramp = frame_sample * flux * frame
     time_sample = frame_sample * frame
+    config = mirisim_tso.utils.get_config(conf)
 
     time = []
     time_flux = []
     for t_0 in np.arange(0, 2000, 10):
-        ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, anneal_time, t_0)
+        ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, t_0, frame, config)
         ramp_i = original_ramp + ramp_difference
 
         (fit_flux_i, dummy) = np.polyfit(time_sample, ramp_i, 1)
@@ -75,7 +78,7 @@ def test_anneal_recovery():
 
     fig = plt.figure()
     ax = fig.add_subplot(2, 1, 1)
-    ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, anneal_time, t_0)
+    ramp_difference = mirisim_tso.effects.anneal_recovery(original_ramp, t_0, frame, config)
     ax.plot(frame_sample, original_ramp, label="Original Ramp")
     ax.plot(frame_sample, original_ramp + ramp_difference, label="Anneal recovery applied")
     # ax.plot(frame_sample, ramp_difference, label="response drift difference")

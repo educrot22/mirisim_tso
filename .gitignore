@@ -1,5 +1,8 @@
 *.png
 MIRI_1Integration/*
+.idea/*
+.DS_Store
+activate_tso.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -125,4 +128,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-

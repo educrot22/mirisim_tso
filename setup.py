@@ -30,7 +30,7 @@ def find_version(*file_paths):
 
 setup(
     name="mirisim_tso",
-    version=find_version("mirisim_tso", "__init__.py"),
+    version=find_version("mirisim_tso", "version.py"),
     description="mirisim_tso",
     url="TODO",
     author="Marine Martin lagarde",
