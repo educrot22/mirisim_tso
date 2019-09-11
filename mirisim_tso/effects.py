@@ -41,11 +41,13 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
 
+    LOG.debug("response_drift() | original_ramp shape : {}".format(original_ramp.shape))
+
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
     # For signal < 1000
     lt1000_selection = signal < 1000
-
+    
     alpha1 = np.ones_like(signal)
     alpha2 = np.ones_like(signal)
     amp1 = np.zeros_like(signal)
