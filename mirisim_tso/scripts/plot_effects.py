@@ -157,3 +157,4 @@ if __name__ == "__main__":
     print("-------------------------------------------------------------------")
     #mirisim_tso.utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
     test_anneal_recovery()
+    print( "Anneal recovery plot updated with success")

@@ -41,13 +41,11 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
 
-    LOG.debug("response_drift() | original_ramp shape : {}".format(original_ramp.shape))
-
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
     # For signal < 1000
     lt1000_selection = signal < 1000
-    
+
     alpha1 = np.ones_like(signal)
     alpha2 = np.ones_like(signal)
     amp1 = np.zeros_like(signal)
@@ -182,9 +180,13 @@ def poisson_noise(original_ramp):
     # Not working at the moment
     frame_differences = np.diff(original_ramp, axis=1)
 
+    first_frame = original_ramp[:,0,:,:]
+    first_frame = first_frame[:,np.newaxis,:,:]
+    frame_differences = np.append(first_frame, frame_differences, axis=1)
+
     single_frame_noise = np.random.poisson(abs(frame_differences))
 
-    noised_ramp += np.cumsum(single_frame_noise, axis=1)
+    noised_ramp = np.cumsum(single_frame_noise, axis=1)
 
-    LOG.debug("idle_recovery() |  noised ramp shape : {}".format(noised_ramp.shape))
+    LOG.debug("poisson_noise() |  noised ramp shape : {}".format(noised_ramp.shape))
     return noised_ramp
