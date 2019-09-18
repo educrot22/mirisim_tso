@@ -4,7 +4,6 @@ from astropy.io import fits
 import logging
 import collections
 
-import sys
 import validate
 import pkg_resources
 import configobj
