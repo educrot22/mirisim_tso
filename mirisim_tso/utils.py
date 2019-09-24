@@ -281,3 +281,12 @@ def get_config(filename):
             raise ValueError(msg)
 
     return config
+
+
+def progressBar(value, endvalue, message, bar_length=20):
+    percent = float(value) / endvalue
+    arrow = '-' * int(round(percent * bar_length) - 1) + 'x'
+    spaces = ' ' * (bar_length - len(arrow))
+
+    sys.stdout.write("\r{0} [{1}] {2}%".format(message, arrow + spaces, int(round(percent * 100))))
+    sys.stdout.flush()

@@ -44,6 +44,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
     illum_models_filename = os.path.join(simulation_folder, "illum_models", "illum_model_1_MIRIMAGE_P750L.fits")
 
     signal = utils.read_illum_model(illum_models_filename)
+    signal = signal[:, 5:77] #handling outdated data-midel (previous incompatibility in size between illum_model and det_image)
     original_ramp, header = utils.read_det_image(det_images_filename)
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
@@ -84,7 +85,7 @@ def sequential_lightcurve_post_treatment(folder, conf):
     :return:
     """
 
-    utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
+    utils.init_log(file_loglevel="DEBUG")
 
     # Read configuration file only once, and pass the dictionary to subsequent calls
     if isinstance(conf, str):
@@ -117,5 +118,9 @@ def sequential_lightcurve_post_treatment(folder, conf):
         simulation_start_time[sim] = t_start[simulation_index[sim]]
 
     # Run each simulation post treatment, one after the other
+    i=0
     for simulation in simulations:
+        utils.progressBar(i, len(simulations), "Post-Processing progress", bar_length=20)
         single_simulation_post_treatment(simulation, simulation_start_time[simulation], config_dict)
+        i+=1
+    print("\n")
