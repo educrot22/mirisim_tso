@@ -75,7 +75,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
     utils.write_det_image_with_effects(det_images_filename, new_data=new_ramp, extra_metadata=metadatas,
                                        overwrite=config_dict["simulations"]["overwrite"])
 
-def sequential_lightcurve_post_treatment(folder, conf):
+def sequential_lightcurve_post_treatment(conf):
     """
 
     :param str folder: Folder that contain all the simulation folders for that light curve
@@ -95,6 +95,8 @@ def sequential_lightcurve_post_treatment(folder, conf):
     else:
         LOG.error("conf parameter needs to be str or dict")
         sys.exit()
+
+    folder = config_dict["simulations"]["dir"]
 
     # List simulations
     simulations = glob.glob(os.path.join(folder, "*/"))
