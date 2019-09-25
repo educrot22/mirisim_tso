@@ -126,7 +126,9 @@ def sequential_lightcurve_post_treatment(conf):
         simulation_start_time[sim] = t_start[simulation_index[sim]]
 
     # Run each simulation post treatment, one after the other
-    i=0
+    nb_simulations = len(simulations)
+    simu_i = 0
     for simulation in simulations:
-        utils.progressBar(i, len(simulations), "Post-Processing progress", bar_length=20)
+        simu_i += 1
+        LOG.info("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
         single_simulation_post_treatment(simulation, simulation_start_time[simulation], config_dict)
