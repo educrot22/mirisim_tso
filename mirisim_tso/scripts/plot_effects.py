@@ -51,7 +51,7 @@ def plot_response_drift():
     ax.plot(time, time_flux, label="RD corrected flux")
     ax.legend()
 
-
+    fig.suptitle("Response drift")
     plt.savefig("response_drift.png")
 
     return fig
@@ -107,7 +107,8 @@ def plot_anneal_recovery():
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Flux [DN/s]")
     ax.legend()
-    plt.savefig("anneal.png")
+    fig.suptitle("Anneal recovery")
+    fig.savefig("anneal.png")
 
     return fig
 
@@ -120,17 +121,15 @@ def plot_idle_recovery():
     """
 
 
-    config = {'simulations': {'dir': 'MIRI_1Integration', 'overwrite': 'True'},
-              'response_drift': {'active': 'true'},
-              'idle_recovery': {'active': 'true', 'duration': '1000.'},
-              'anneal_recovery': {'active': 'true', 'time': '-0.'},
-              'noise': {'active': 'true'}}
+    config = {'simulations': {'dir': 'MIRI_1Integration', 'overwrite': True},
+              'response_drift': {'active': True},
+              'idle_recovery': {'active': True, 'duration': 5000.},
+              'anneal_recovery': {'active': True, 'time': -0.},
+              'noise': {'active': True}}
 
 
-    t_0 = 60  # seconds
     frame = 0.19  # seconds
     nb_frames = 25
-    idle_time = 2000  # s
     flux = 500  # DN/s
 
     frame_sample = np.arange(nb_frames)
@@ -154,15 +153,18 @@ def plot_idle_recovery():
 
     fig = plt.figure()
     ax = fig.add_subplot(2, 1, 1)
+    t_0 = 0.
     ramp_difference = mirisim_tso.effects.idle_recovery(original_ramp, t_0, flux, frame, config)
     ax.plot(frame_sample, np.squeeze(original_ramp), label="Original Ramp")
-    ax.plot(frame_sample, np.squeeze(original_ramp) + np.squeeze(ramp_difference), label="idle recovery applied")
+    ax.plot(frame_sample, np.squeeze(original_ramp) + np.squeeze(ramp_difference), label="Idle recovery applied, t_0={} s".format(t_0))
     # ax.plot(frame_sample, ramp_difference, label="response drift difference")
     ax.legend()
+
     ax = fig.add_subplot(2, 1, 2)
     ax.plot([0, 12000], [flux, flux], label="Input flux")
     ax.plot(time, time_flux, label="IR corrected flux")
     ax.legend()
+    fig.suptitle("Idle recovery")
     plt.savefig("idle_recovery.png")
 
     return fig
@@ -172,7 +174,7 @@ if __name__ == "__main__":
     print("|                           SCRIPT PLOT                           |")
     print("-------------------------------------------------------------------")
     #mirisim_tso.utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
-    plot_anneal_recovery()
+    #plot_anneal_recovery()
+    plot_idle_recovery()
 
     plt.show()
-    print( "Anneal recovery plot updated with success")
