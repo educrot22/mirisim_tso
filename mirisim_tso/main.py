@@ -50,30 +50,35 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
     frame_time = header["TFRAME"]
+    metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)]}
 
     new_ramp = original_ramp.copy()
     if config_dict["response_drift"]["active"]:
+        metadatas['history'].append("MIRISim TSO: Add Response drift")
         ramp_difference = effects.response_drift(original_ramp, t_0, signal, frame_time)
         new_ramp += ramp_difference
 
     if config_dict["idle_recovery"]["active"]:
+        metadatas['history'].append("MIRISim TSO: Add Idle Recovery")
         ramp_difference = effects.idle_recovery(original_ramp, t_0, signal, frame_time, config_dict)
         new_ramp += ramp_difference
 
     if config_dict["anneal_recovery"]["active"]:
+        metadatas['history'].append("MIRISim TSO: Add Anneal Recovery")
         ramp_difference = effects.anneal_recovery(original_ramp, t_0, frame_time, config_dict)
         new_ramp += ramp_difference
 
 
     # Apply poisson noise after all the other effects are applied
     if config_dict["noise"]["active"]:
+        metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
         new_ramp = effects.poisson_noise(new_ramp)
 
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
-    metadatas = {'history':"Post processing with MIRISim TSO v{}".format(version.__version__)}
+
 
     # Write fits file
-    utils.write_det_image_with_effects(det_images_filename, new_data=new_ramp, extra_metadata=metadatas,
+    utils.write_det_image_with_effects(det_images_filename, new_data=new_ramp, extra_metadata=metadatas, config=config_dict,
                                        overwrite=config_dict["simulations"]["overwrite"])
 
 def sequential_lightcurve_post_treatment(conf):

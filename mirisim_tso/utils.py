@@ -172,7 +172,7 @@ def update_dict(d, u):
     return d
 
 
-def write_det_image_with_effects(original_path, new_data, extra_metadata, overwrite=True):
+def write_det_image_with_effects(original_path, new_data, extra_metadata, config, overwrite=True):
     """
     Based on the original .fits file, will overwrite the data cube with the one given
     in parameter.
@@ -197,6 +197,26 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, overwr
 
     """
 
+    # Construct name depending on effect activated
+    final_dir = "det_images"
+
+    if config["response_drift"]["active"]:
+        final_dir += "_drift"
+
+    if config["idle_recovery"]["active"]:
+        final_dir += "_idle"
+
+    if config["anneal_recovery"]["active"]:
+        final_dir += "_anneal"
+
+    if config["noise"]["active"]:
+        final_dir += "_noise"
+
+    # If all effects are deactivated, don't write any outputs
+    if final_dir == "det_images":
+        LOG.warning("All effects are deactivated, not writing any output")
+        return
+
     original_name = os.path.basename(original_path)
     original_dir = os.path.dirname(original_path)
 
@@ -207,9 +227,19 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, overwr
 
     metadata = hdulist[0].header
 
+    # Treat history separately
+    if "history" in extra_metadata:
+        history_list = extra_metadata["history"]
+
+        for line in history_list:
+            metadata["history"] = line
+
+        del(extra_metadata["history"])
+
+    # Update the rest of the parameters
     metadata.update(extra_metadata)
 
-    new_path = os.path.abspath(os.path.join(original_dir, os.path.pardir, "det_images_post_processed"))
+    new_path = os.path.abspath(os.path.join(original_dir, os.path.pardir, final_dir))
 
     if not os.path.isdir(new_path):
         os.mkdir(new_path)
