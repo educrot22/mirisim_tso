@@ -8,6 +8,8 @@ import validate
 import pkg_resources
 import configobj
 
+from . import constants as c
+
 LOG = logging.getLogger(__name__)
 
 def read_det_image(filename):
@@ -51,13 +53,13 @@ def read_illum_model(illum_model_filename):
     """
 
     (name, ext) = os.path.splitext(illum_model_filename)
-    gain=5.75
+
 
     if ext==".fits":
         hdulist      = fits.open(illum_model_filename)
         illumination = hdulist['INTENSITY'].data
         hdulist.close()
-        slope_array  = illumination/gain
+        slope_array  = illumination/c.gain
         return slope_array
 
     else:

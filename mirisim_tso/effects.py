@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from . import utils
+from . import constants as c
 
 import logging
 LOG = logging.getLogger(__name__)
@@ -173,18 +173,20 @@ def poisson_noise(original_ramp):
 
     Returns
     -------
-    data cube with Poisson noise added
+    data cube with Poisson noise added (this is not a ramp difference, this is the full ramp)
 
     """
-    #TODO check negative values and decide what to do.
-    # Not working at the moment
-    frame_differences = np.diff(original_ramp, axis=1)
 
+    frame_differences = np.diff(original_ramp, axis=1) * c.gain
+
+    # Poisson noise must be made on electron, not DN, or the noise will be too high
+    # noise on 20 DN: sqrt(20) * 5.5 = 24.6 electrons
+    # noise on 20*5.5 electrons: sqrt(20*5.5) = 10.5 electrons
     first_frame = original_ramp[:,0,:,:]
     first_frame = first_frame[:,np.newaxis,:,:]
     frame_differences = np.append(first_frame, frame_differences, axis=1)
 
-    single_frame_noise = np.random.poisson(abs(frame_differences))
+    single_frame_noise = np.random.poisson(abs(frame_differences)) / c.gain
 
     noised_ramp = np.cumsum(single_frame_noise, axis=1)
 
