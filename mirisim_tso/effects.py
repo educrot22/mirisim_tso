@@ -99,21 +99,21 @@ def anneal_recovery(original_ramp, t_0, frame, config):
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
 
-    alpha1 = 0.005051236714489755 * np.ones((nb_y, nb_x))
+    beta1 = 197.97132 * np.ones((nb_y, nb_x))
     amp1   = 11.600852 * np.ones((nb_y, nb_x))
-    alpha2 = 0.0010083051778396745 * np.ones((nb_y, nb_x))
+    beta2 = 991.76323 * np.ones((nb_y, nb_x))
     amp2   = 0.86786327 * np.ones((nb_y, nb_x))
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
 
-    prefactor1 = amp1 * alpha1
-    prefactor2 = amp2 * alpha2
+    prefactor1 = amp1 * beta1
+    prefactor2 = amp2 * beta2
 
-    ramp_difference_t_0 = prefactor1 * np.exp(-(t_0 + anneal_time) / alpha1) + prefactor2 * np.exp(-(t_0 + anneal_time) / alpha2)
+    ramp_difference_t_0 = prefactor1 * np.exp(-(t_0 + anneal_time) / beta1) + prefactor2 * np.exp(-(t_0 + anneal_time) / beta2)
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
-    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-(t + anneal_time) * alpha1) - prefactor2 * np.exp(-(t + anneal_time) * alpha2)
+    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-(t + anneal_time) / beta1) - prefactor2 * np.exp(-(t + anneal_time) / beta2)
 
     LOG.debug("anneal_recovery() | ramp shape : {}".format(ramp_difference.shape))
     return ramp_difference
