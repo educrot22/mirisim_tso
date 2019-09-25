@@ -76,6 +76,10 @@ def anneal_recovery(original_ramp, t_0, frame, config):
     """
     Computes the anneal recovery effect on the ramp. Coefficients values come from JPL tests of 2019.
 
+    In config, will read config["anneal_recovery"]["time"]. This number is the number of seconds between the anneal and
+    the beginning of the observation. if 0, this means the observation start right after the anneal.
+    The default value, 600, means the observation starts 10 minutes after the anneal, tought to be the minimum time possible.
+
     Parameters
     ----------
     original_ramp

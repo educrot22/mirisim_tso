@@ -67,12 +67,13 @@ def plot_anneal_recovery():
     config = {'simulations': {'dir': 'MIRI_1Integration', 'overwrite': True},
               'response_drift': {'active': True},
               'idle_recovery': {'active': True, 'duration': 1000.},
-              'anneal_recovery': {'active': True, 'time': -0.},
+              'anneal_recovery': {'active': True, 'time': 600.},
               'noise': {'active': True}}
 
     frame = 0.19  # seconds
     nb_frames = 25
     flux = 10  # DN/s
+    anneal_time = config['anneal_recovery']['time']
 
     frame_sample = np.arange(nb_frames)
     original_ramp = frame_sample * flux * frame
@@ -107,7 +108,7 @@ def plot_anneal_recovery():
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Flux [DN/s]")
     ax.legend()
-    fig.suptitle("Anneal recovery")
+    fig.suptitle("Anneal at t={} s".format(anneal_time))
     fig.savefig("anneal.png")
 
     return fig
@@ -220,8 +221,8 @@ if __name__ == "__main__":
     print("|                           SCRIPT PLOT                           |")
     print("-------------------------------------------------------------------")
     #mirisim_tso.utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
-    #plot_anneal_recovery()
+    plot_anneal_recovery()
     #plot_idle_recovery()
-    plot_poisson_noise()
+    #plot_poisson_noise()
 
     plt.show()
