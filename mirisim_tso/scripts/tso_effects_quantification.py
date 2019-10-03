@@ -164,7 +164,7 @@ fig.suptitle('FITTING FOR RESPONSE DRIFT TIME CONSTANTS', fontsize=16)
 ax = fig.add_subplot(2, 2, 1)
 plt.plot(signal, alpha1, 'o', signal_new, alpha1_new, color='xkcd:navy')
 plt.title('Alpha 1')
-plt.legend()
+#plt.legend()
 # plt.xlim([0,500])
 # plt.ylim([0,1500])
 plt.xlabel('Signal (DN/s)')
@@ -173,7 +173,7 @@ plt.ylabel('Time constant (s)')
 ax = fig.add_subplot(2, 2, 2)
 plt.plot(signal, alpha2, 'o',signal_new, alpha2_new, color='xkcd:raspberry')
 plt.title('Alpha 2')
-plt.legend()
+#plt.legend()
 # plt.xlim([0,500])
 # plt.ylim([0,1500])
 plt.xlabel('Signal (DN/s)')
@@ -182,7 +182,7 @@ plt.ylabel('Time constant (s)')
 ax = fig.add_subplot(2, 2, 3)
 plt.plot(signal, amplitude1, 'o', signal_new, amplitude1_new, color='xkcd:navy')
 plt.title('Amlplitude 1')
-plt.legend()
+#plt.legend()
 # plt.xlim([0,500])
 plt.ylim([amplitude1.min(), amplitude1.max()])
 plt.xlabel('Signal (DN/s)')
@@ -192,14 +192,73 @@ plt.ylabel('Amplitude (DN/s)')
 ax = fig.add_subplot(2, 2, 4)
 plt.plot(signal, amplitude2, 'o', signal_new, amplitude2_new, color='xkcd:raspberry')
 plt.title('Amlplitude 2')
-plt.legend()
+#plt.legend()
 # plt.xlim([0,500])
 plt.xlabel('Signal (DN/s)')
 plt.ylabel('Amplitude (DN/s)')
 #fig.tight_layout()
 
 
-fig.savefig('alpha_curvefits.png', dpi=300, transparent=True)
+fig.savefig('alpha1_curvefits.png', dpi=300, transparent=True)
+
+
+# format           (alpha3,    amplitude3,  DN/s)
+points = np.array([(13588.091, -49.610481,  1505.35), #
+                   (10327.691, -59.095313,  1995.68), #
+                   (7674.6817, -69.111692,  2498.62), #
+                   (6133.6167, -74.831790,  2999.83), #
+                   (4876.1171, -82.711036,  3502.28), #
+                   (3643.5560, -88.179656,  3997.67), #
+                   (2726.2495, -91.423858,  4503.33), #
+                   (2283.5902, -93.478588,  5001.08)]) #
+
+
+
+alpha3     = points[:,0]
+amplitude3 = points[:,1]
+signal     = points[:,2]
+
+
+print("\n • Alpha 3:")
+fit_form="exp"
+prior = (4e6, -1e-2, 1000, 1.0, 1.0)
+a_alpha3, b = curve_fit(FORMS_AVAILABLE[fit_form], signal, alpha3, p0=prior)#, bounds=(0, np.inf))
+print_formula(a_alpha3, "alpha3", "signal", fit_form)
+signal_new = np.linspace(signal[0], signal[-1], 200)
+alpha3_new = FORMS_AVAILABLE[fit_form](signal_new, a_alpha3[0], a_alpha3[1], a_alpha3[2], a_alpha3[3], a_alpha3[4])
+
+
+print("\n • Amplitude 3:")
+fit_form="poly"
+prior = (0., 0., -200, 1.0, 1.0)
+a_amp3, b = curve_fit(FORMS_AVAILABLE[fit_form], signal, amplitude3)#, bounds=(0, np.inf))
+print_formula(a_amp3, "alpha3_amp", "signal", fit_form)
+signal_new = np.linspace(signal[0], signal[-1], 200)
+amplitude3_new = FORMS_AVAILABLE[fit_form](signal_new, a_amp3[0], a_amp3[1], a_amp3[2], a_amp3[3], a_amp3[4])
+
+
+fig = plt.figure(figsize=(20,15))
+fig.suptitle('FITTING FOR RESPONSE DRIFT TIME CONSTANTS', fontsize=16)
+ax = fig.add_subplot(2, 1, 1)
+plt.plot(signal, alpha3, 'o', signal_new, alpha3_new, color='xkcd:navy')
+plt.title('Alpha 1')
+#plt.legend()
+# plt.xlim([0,500])
+# plt.ylim([0,1500])
+plt.xlabel('Signal (DN/s)')
+plt.ylabel('Time constant (s)')
+# -- # -- # -- # -- # -- # -- # -- #
+ax = fig.add_subplot(2, 1, 2)
+plt.plot(signal, amplitude3, 'o', signal_new, amplitude3_new, color='xkcd:navy')
+plt.title('Amlplitude 1')
+#plt.legend()
+# plt.xlim([0,500])
+# plt.ylim([amplitude3.min(), amplitude3.max()])
+plt.xlabel('Signal (DN/s)')
+plt.ylabel('Amplitude (DN/s)')
+
+
+fig.savefig('alpha2_curvefits.png', dpi=300, transparent=True)
 
 
 

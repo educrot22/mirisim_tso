@@ -1,5 +1,9 @@
 *.png
 MIRI_1Integration/*
+.idea/*
+.DS_Store
+activate_tso.sh
+test_light_curve/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
