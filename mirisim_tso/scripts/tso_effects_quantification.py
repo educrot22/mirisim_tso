@@ -202,13 +202,6 @@ plt.ylabel('Amplitude (DN/s)')
 fig.savefig('alpha1_curvefits.png', dpi=300, transparent=True)
 
 
-
-
-
-
-
-
-
 # format           (alpha3,    amplitude3,  DN/s)
 points = np.array([(13588.091, -49.610481,  1505.35), #
                    (10327.691, -59.095313,  1995.68), #
@@ -235,20 +228,13 @@ signal_new = np.linspace(signal[0], signal[-1], 200)
 alpha3_new = FORMS_AVAILABLE[fit_form](signal_new, a_alpha3[0], a_alpha3[1], a_alpha3[2], a_alpha3[3], a_alpha3[4])
 
 
-print("\n • Ampltude 3:")
+print("\n • Amplitude 3:")
 fit_form="poly"
 prior = (0., 0., -200, 1.0, 1.0)
 a_amp3, b = curve_fit(FORMS_AVAILABLE[fit_form], signal, amplitude3)#, bounds=(0, np.inf))
 print_formula(a_amp3, "alpha3_amp", "signal", fit_form)
 signal_new = np.linspace(signal[0], signal[-1], 200)
 amplitude3_new = FORMS_AVAILABLE[fit_form](signal_new, a_amp3[0], a_amp3[1], a_amp3[2], a_amp3[3], a_amp3[4])
-
-
-
-
-
-
-
 
 
 fig = plt.figure(figsize=(20,15))

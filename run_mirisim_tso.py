@@ -9,7 +9,7 @@ import mirisim_tso
 
 mirisim_tso.utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
 
-simulation_name = "MIRI_1Integration"
+simulation_name = "../MIRISim_2018-11-05/simulation_0040"
 
 config_filename = "post_treatment.ini"
 
