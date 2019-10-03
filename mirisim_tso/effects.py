@@ -45,6 +45,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
 
     # For signal < 1000
     lt1000_selection = signal < 1000
+    bt1000_5000_selection = (signal > 1000) & (signal < 5000)
 
     alpha1 = np.ones_like(signal)
     alpha2 = np.ones_like(signal)
@@ -55,6 +56,10 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     amp1[lt1000_selection]   = -0.000470839463392 * np.exp(0.0138190609414 * signal[lt1000_selection]) + -9.39756705304
     alpha2[lt1000_selection] = (11.5503579674 * 236.879448705**2 * signal[lt1000_selection] + 165016897.075) / (236.879448705**2 + (signal[lt1000_selection] - 241.72012081)**2)
     amp2[lt1000_selection]   = -0.0387088940065 * signal[lt1000_selection] + -0.517555367969
+
+    alpha1[bt1000_5000_selection] = 30863.54844681253 * np.exp(-0.0005738567944909932 * signal[bt1000_5000_selection])  + 527.584922874043
+    amp1[bt1000_5000_selection]   = 2.577897380949174e-06 * signal[bt1000_5000_selection]**2 + -0.029471518433861543 * signal[bt1000_5000_selection] - 10.880600687206693 
+
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     t = t[:,np.newaxis, np.newaxis]  # Prepare broadcasting
