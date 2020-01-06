@@ -14,7 +14,7 @@ from . import version
 
 LOG = logging.getLogger(__name__)
 
-def single_simulation_post_treatment(simulation_folder, t_0, conf):
+def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
     """
     Apply post treatment to a single simulation folder
 
@@ -71,8 +71,10 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf):
 
     # Apply poisson noise after all the other effects are applied
     if config_dict["noise"]["active"]:
+        if mask is None:
+            mask = utils.read_mask()  # TODO include path to CDP MASK in ini file
         metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
-        new_ramp = effects.poisson_noise(new_ramp)
+        new_ramp = effects.poisson_noise(new_ramp, mask)
 
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
@@ -104,6 +106,8 @@ def sequential_lightcurve_post_treatment(conf):
 
     folder = config_dict["simulations"]["dir"]
 
+    mask = utils.read_mask()
+
     # List simulations
     simulations = glob.glob(os.path.join(folder, "*/"))
     simulations.sort()
@@ -131,4 +135,4 @@ def sequential_lightcurve_post_treatment(conf):
     for simulation in simulations:
         simu_i += 1
         LOG.info("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
-        single_simulation_post_treatment(simulation, simulation_start_time[simulation], config_dict)
+        single_simulation_post_treatment(simulation, simulation_start_time[simulation], config_dict, mask=mask)

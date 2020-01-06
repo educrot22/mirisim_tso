@@ -171,7 +171,7 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
     return ramp_difference
 
 
-def poisson_noise(original_ramp):
+def poisson_noise(original_ramp, mask):
     """
     Compute Poisson noise on all integration of a det_image data cube.
 
@@ -179,6 +179,10 @@ def poisson_noise(original_ramp):
     ----------
     original_ramp
                  Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
+    mask
+        np.array(bool) - Array of bad pixels (True if bad, False if good)
+                 Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
+                 to be excluded from the computation.
 
     Returns
     -------
@@ -187,7 +191,6 @@ def poisson_noise(original_ramp):
     """
 
     frame_differences = np.diff(original_ramp, axis=1) * c.gain
-
     # Poisson noise must be made on electron, not DN, or the noise will be too high
     # noise on 20 DN: sqrt(20) * 5.5 = 24.6 electrons
     # noise on 20*5.5 electrons: sqrt(20*5.5) = 10.5 electrons
@@ -198,6 +201,11 @@ def poisson_noise(original_ramp):
     single_frame_noise = np.random.poisson(abs(frame_differences)) / c.gain
 
     noised_ramp = np.cumsum(single_frame_noise, axis=1)
+
+    # This works only for the good pixels (which accumulate signal). We use the bad pixels CDP from MIRISim
+    # Overwrite bad pixels with the original value.
+    bad_pixels = np.broadcast_to(mask, original_ramp.shape)
+    noised_ramp[bad_pixels] = original_ramp[bad_pixels]
 
     LOG.debug("poisson_noise() |  noised ramp shape : {}".format(noised_ramp.shape))
     return noised_ramp

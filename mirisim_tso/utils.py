@@ -1,5 +1,7 @@
 import os
 from astropy.io import fits
+import numpy as np
+import sys
 
 import logging
 import collections
@@ -49,7 +51,7 @@ def read_illum_model(illum_model_filename):
     • illum_model_filename     : String - Name of the entry illum_model_filename containing the illum model to read
 
     >>>> RETURNS
-    • slope_array   : np.array - values in electrons/s of the illumination
+    • slope_array   : np.array - values in DN/s of the illumination
     """
 
     (name, ext) = os.path.splitext(illum_model_filename)
@@ -59,7 +61,12 @@ def read_illum_model(illum_model_filename):
         hdulist      = fits.open(illum_model_filename)
         illumination = hdulist['INTENSITY'].data
         hdulist.close()
-        slope_array  = illumination/c.gain
+
+        # Add reference pixel to illum models to match size of det_images
+        (ny, nx) = illumination.shape
+        slope_array = np.zeros((ny, nx+4))
+        slope_array[:, 4:] = illumination/c.gain
+
         return slope_array
 
     else:
@@ -321,3 +328,33 @@ def progressBar(value, endvalue, message, bar_length=20):
 
     sys.stdout.write("\r{0} [{1}] {2}%".format(message, arrow + spaces, int(round(percent * 100))))
     sys.stdout.flush()
+
+
+def read_mask():
+    """
+    Read MIRI CDP MASK and return mask cropped for a SLITLESS observation
+
+    :param str filename: path to CDP file
+
+    :return: cropped mask (False if good, True if rejected)
+    :rtype: ndarray(bool)
+    """
+
+    filename = pkg_resources.resource_filename("mirisim_tso", "data/MIRI_FM_MIRIMAGE_MASK_07.02.01.fits.gz")
+
+    # Fake metadata dictionnary of a SLITLESS LRS det_images
+    metadata = {}
+    metadata["SUBSTRT1"] = 1  # Starting pixel in axis 1 direction
+    metadata["SUBSTRT2"] = 529  # Starting pixel in axis 2 direction
+    metadata["SUBSIZE1"] = 72  # Number of pixels in axis 1 direction
+    metadata["SUBSIZE2"] = 416  # Number of pixels in axis 2 direction
+
+    x_start = metadata["SUBSTRT1"] - 1
+    y_start = metadata["SUBSTRT2"] - 1
+    x_stop = x_start + metadata["SUBSIZE1"]
+    y_stop = y_start + metadata["SUBSIZE2"]
+
+    with fits.open(filename) as hdulist:
+        mask = hdulist[1].data.astype(bool)
+
+    return mask[y_start:y_stop, x_start:x_stop]
