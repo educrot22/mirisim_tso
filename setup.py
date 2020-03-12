@@ -39,5 +39,5 @@ setup(
     package_dir={'mirisim_tso': 'mirisim_tso'},
     package_data={},
     scripts=[],
-    data_files=[('', ['README.md'])]
+    data_files=[('', ['README.adoc'])]
 )

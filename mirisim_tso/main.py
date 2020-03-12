@@ -14,15 +14,19 @@ from . import version
 
 LOG = logging.getLogger(__name__)
 
-def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
+def single_simulation_post_treatment(simulation_folder, conf, t_0=0., mask=None):
     """
-    Apply post treatment to a single simulation folder
+    Apply post treatment to a single simulation folder.
+
+    If used directly by the user, t_0 should not be used unless the user knows what he's doing. t_0 is mainly usefull
+    in a sequential dataset of multiple observations. One might want to use a non-zero value for t_0, meaning the
+    isolated observation will have an extra time offset of t_0 for all systematic effects.
 
     Parameters
     ----------
     simulation_folder: str
         path (relative or absolute) to the MIRISim simulation folder (the one that contains det_images/illum_models folder)
-    t_0: float
+    t_0: float [optional]
         Time in second since beginning of the observation (beginning of observation is considered to be t = 0s)
     config: str or dict
         name of the ConfigObj .ini file, or corresponding dictionnary

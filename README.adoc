@@ -1,0 +1,233 @@
+= MIRISim TSO: Post-Treatment of MIRISim Images for Time-Series Observations
+:author: Marine Martin-Lagarde & Christophe Cossou
+:sectnums:
+:toc: left
+:toclevels: 4
+:source-language: python
+:experimental:
+:xrefstyle: short
+
+
+== Getting Started
+IMPORTANT: Current version is still under development.
+
+MRISim_TSO is a Python 3 package. As MIRISim has not been designed for Time-Series Observations (TSO), in order to create those, one has to start a new simulations at each time step. This implies getting rig of all the systematic noises and drifts. The present package aims at reintroducing the detector systematics in the files resulting of a MIRISim computation.
+
+The package have been designed exclusively to treat MIRISim output files, hence we try to be up to date on the data model. Please make sure you comply to the format and folder arborescence.
+
+[WARNING]
+====
+MIRISim simulations *MUST* be done without poisson noise, latency and Cosmic rays. See <<limitations>> for more informations.
+====
+
+Here, we create new files in the MIRISim result folder containing a new `det_image` accounting for instrumental systematics.
+
+These Instructions will get you to have a version of the package on your computer up and running. Note that a complete and detailed user manual is available in the documentation. It contains some important usage rules, and we strongly advise a careful reading before using this treatment.
+
+Every step described hereafter have to be done in the directory containing the `setup.py` file (usually, the downloaded folder).
+
+=== Requirements
+The package is developed in `Python 3.6`. The required python libraries are specified in the file 'requirements.txt'. To ensure all dependencies are satisfied, run the following command line:
+[source, bash]
+----
+pip install -r requirements.txt
+----
+or in anaconda
+[source, bash]
+----
+conda install --file requirements.txt
+----
+
+=== Installation
+You can install mirisim_tso as a standard Python module. To do that, in the root directory of the package, do:
+[source, bash]
+----
+python setup.py install
+----
+In your python script or in a python environment, import the module with:
+[source]
+----
+import mirisim_tso
+----
+
+For developers, create a symbolic link so that each time the code is changed, the imported module is changed accordingly (still in the root directory):
+[source, bash]
+----
+pip install -e .
+----
+
+== Configuration
+This section describe all parameters available in the configuration file for mirisim_tso.
+Each subsection represent a section of the .ini file
+
+=== simulations
+[source, ini]
+----
+[simulations]
+dir = "MIRI_1Integration"
+overwrite = True
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|dir | str | Folder name. All folders found in this folder will be assumed to be MIRISim simulations
+|overwrite | bool | Existing level 1B files are *NOT* overwriting, even with `overwrite=True`.
+However, for each combination of effect, a specific file is created.
+This file will be overwritten if this parameter is *True*
+|=======================================================================
+
+
+=== response_drift
+Add *response drift systematic*, i.e the fact that the detector takes time to settle in a stable configuration at the start of the observation
+and first integrations will be different than the rest of integrations for the observations.
+
+[source, ini]
+----
+[response_drift]
+active = true
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate Response Drift
+|=======================================================================
+
+=== idle_recovery
+Add *systematic* related to *Idle time* (the time before the observation where
+a reset is done every frame (during pointing for instance).
+
+[source, ini]
+----
+[idle_recovery]
+active = true
+duration = 1000.
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate Idle Recovery
+| duration | float / seconds | Idle time before observation starts
+|=======================================================================
+
+=== anneal_recovery
+Add *systematic* related to an *Anneal*.
+
+[source, ini]
+----
+[anneal_recovery]
+active = true
+time = 600.
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate Anneal Recovery
+| duration | float / seconds | Time ellapsed since last anneal, before Observation starts. 0 means the anneal was done, then observation starts right after. 600 (*default*) means there was 10 minutes between end of anneal and start of observation
+|=======================================================================
+
+=== noise
+Add Poisson noise to the observation
+(this needs to be done here because we can't add systematics properly if poisson noise was processed in MIRISim).
+
+[source, ini]
+----
+[noise]
+active  = true
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate poisson noise
+|=======================================================================
+
+== How to use
+In Python, you have 2 solutions. Either run for a single simulation, or a serie of observations.
+
+[[limitations]]
+=== Limitations
+
+.This package is intended to work only for MIRISim simulations that check the following conditions:
+* Poisson noise deactivated
+* latency deactivated
+* cosmic rays deactivated
+* *LRS_SLITLESS* observation
+
+To deactivate the required effects in MIRISim, in Python you must do:
+[source]
+----
+simulator_config = SimulatorConfig.makeSimulator(
+take_webbPsf=False,
+include_refpix=True,
+include_poisson=False,
+include_readnoise=True,
+include_badpix=True,
+include_dark=True,
+include_flat=True,
+include_gain=True,
+include_nonlinearity=True,
+include_drifts=True,
+include_latency=False,
+cosmic_ray_mode='NONE') # SOLAR_MIN, SOLAR_MAX, SOLAR_FLARE, NONE
+----
+If you use the command-line tool, the corresponding simulator.ini file is:
+[source, ini]
+----
+[SCASim]
+  include_refpix = T                    # Include reference pixels in data.
+  include_poisson = F                   # Apply poisson noise.
+  include_readnoise = T                 # Apply read noise noise.
+  include_badpix = T                    # Apply bad pixels.
+  include_dark = T                      # Apply dark current / hot pixels.
+  include_flat = T                      # Apply flat field.
+  include_gain = T                      # Apply gain.
+  include_nonlinearity = T              # Apply non-linearity.
+  include_drifts = T                    # Include detector drifts.
+  include_latency = F                   # Include detector latency.
+  cosmic_ray_mode = NONE           # Cosmic ray environment mode.
+----
+
+=== Serie of observations
+This is how the package is intended to be used.
+
+[source]
+----
+import mirisim_tso
+
+mirisim_tso.utils.init_log()
+
+config_filename = "post_treatment.ini"
+mirisim_tso.sequential_lightcurve_post_treatment(config_filename)
+----
+
+=== Single observation
+[source]
+----
+import mirisim_tso
+
+mirisim_tso.utils.init_log()
+
+simulation_name = "my_simulation"
+config_filename = "post_treatment.ini"
+mirisim_tso.single_simulation_post_treatment(simulation_folder=simulation_name, conf=config_filename)
+----
+
+== Author
+   - ***Marine Martin-Lagarde*** *(Corresponding author)* - CEA-Saclay - marine.martin-lagarde@cea.fr
+   - ***Christophe Cossou*** - IAS-Orsay - *Python support and package architecture*
+
+== Licence
+**<center>Work in progress</center>**
+
+== Acknowledgments
+If you want to use this code in a scientific publication, it would be appreciated if you cite us. *No referenced article yet*   
+The author is partly funded by a CNES grant. The research leading to these development has received funding from the European Union’s Horizon 2020 Research and Innovation Programme, under Grant Agreement 776403.
+**<center>Work in progress</center>**
+
+== References
+The reference articles for the calculations used in the code are the following :   
+- D.Dicken et al. _in prep_
