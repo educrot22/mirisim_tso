@@ -14,7 +14,7 @@ from . import version
 
 LOG = logging.getLogger(__name__)
 
-def single_simulation_post_treatment(simulation_folder, conf, t_0=0., mask=None):
+def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
     """
     Apply post treatment to a single simulation folder.
 
@@ -26,10 +26,14 @@ def single_simulation_post_treatment(simulation_folder, conf, t_0=0., mask=None)
     ----------
     simulation_folder: str
         path (relative or absolute) to the MIRISim simulation folder (the one that contains det_images/illum_models folder)
-    t_0: float [optional]
+    t_0: float
         Time in second since beginning of the observation (beginning of observation is considered to be t = 0s)
-    config: str or dict
+    conf: str or dict
         name of the ConfigObj .ini file, or corresponding dictionnary
+    mask:
+        np.array(bool) - Array of bad pixels (True if bad, False if good)
+                 Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
+                 to be excluded from the computation.
 
     Returns
     -------
@@ -82,10 +86,12 @@ def single_simulation_post_treatment(simulation_folder, conf, t_0=0., mask=None)
 
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
+    # TODO Add the time-stamp in BJD to the file header.
 
     # Write fits file
     utils.write_det_image_with_effects(det_images_filename, new_data=new_ramp, extra_metadata=metadatas, config=config_dict,
                                        overwrite=config_dict["simulations"]["overwrite"])
+
 
 def sequential_lightcurve_post_treatment(conf):
     """
