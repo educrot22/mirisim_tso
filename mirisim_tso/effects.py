@@ -41,25 +41,28 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # - If yes, we have a det_image, and the dispatch on the different formulas needs to be done with np.where()
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
+    transition_threshold =  750
+    fading_threshold = 5000
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
-    # For signal < 1000
-    lt1000_selection = signal < 1000
-    bt1000_5000_selection = (signal > 1000) & (signal < 5000)
+    # Creating two pixels masks corresponding to two different fitting regimes
+    faint_pixels = signal < transition_threshold
+    medium_pixels = (~faint_pixels) & (signal < fading_threshold)
 
     alpha1 = np.ones_like(signal)
     alpha2 = np.ones_like(signal)
     amp1 = np.zeros_like(signal)
     amp2 = np.zeros_like(signal)
 
-    alpha1[lt1000_selection] = -0.251006324468 * signal[lt1000_selection] + 256.617781046
-    amp1[lt1000_selection] = -0.000470839463392 * np.exp(0.0138190609414 * signal[lt1000_selection]) + -9.39756705304
-    alpha2[lt1000_selection] = (11.5503579674 * 236.879448705**2 * signal[lt1000_selection] + 165016897.075) / (236.879448705**2 + (signal[lt1000_selection] - 241.72012081)**2)
-    amp2[lt1000_selection] = -0.0387088940065 * signal[lt1000_selection] + -0.517555367969
+    # Values fitted from JPL test data, obtained with notebook extract_responsedrift_expressions.ipynb
+    alpha1[faint_pixels] = -0.24824707509094024 * signal[faint_pixels] + 256.0307052443123
+    amp1[faint_pixels] = -3.309038643901135 * np.exp(0.002099958184394631 * signal[faint_pixels]) + -3.1679206249778638
+    alpha2[faint_pixels] = (11.128462112080102 * 55332.60403145965 * signal[faint_pixels] + 168405550.01410204) / (55332.60403145965 + (signal[faint_pixels] - 245.45591611338756)**2)
+    amp2[faint_pixels] = -0.041975980807126514 * signal[faint_pixels] + 0.28375014129499576
 
-    alpha1[bt1000_5000_selection] = 30863.54844681253 * np.exp(-0.0005738567944909932 * signal[bt1000_5000_selection]) + 527.584922874043
-    amp1[bt1000_5000_selection] = 2.577897380949174e-06 * signal[bt1000_5000_selection]**2 + -0.029471518433861543 * signal[bt1000_5000_selection] - 10.880600687206693
+    alpha1[medium_pixels] = 2643.2695863041595 * np.exp(-0.0008722598069934617 * signal[medium_pixels]) + 125.05736916420666
+    amp1[medium_pixels] = 3.311621436854758e-06 * signal[medium_pixels]**2 + -0.034646597553672186 * signal[medium_pixels] + -2.551106144746854
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     t = t[:, np.newaxis, np.newaxis]  # Prepare broadcasting
