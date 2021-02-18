@@ -41,39 +41,33 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # - If yes, we have a det_image, and the dispatch on the different formulas needs to be done with np.where()
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
-    transition_threshold =  750
     fading_threshold = 5000
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
     # Creating two pixels masks corresponding to two different fitting regimes
-    faint_pixels = signal < transition_threshold
-    medium_pixels = (~faint_pixels) & (signal < fading_threshold)
+    medium_pixels = signal < fading_threshold
 
     alpha1 = np.ones_like(signal)
     alpha2 = np.ones_like(signal)
     amp1 = np.zeros_like(signal)
     amp2 = np.zeros_like(signal)
 
-    # Values fitted from JPL test data, obtained with notebook extract_responsedrift_expressions.ipynb
-    alpha1[faint_pixels] = -0.24824707509094024 * signal[faint_pixels] + 256.0307052443123
-    amp1[faint_pixels] = -3.309038643901135 * np.exp(0.002099958184394631 * signal[faint_pixels]) + -3.1679206249778638
-    alpha2[faint_pixels] = (11.128462112080102 * 55332.60403145965 * signal[faint_pixels] + 168405550.01410204) / (55332.60403145965 + (signal[faint_pixels] - 245.45591611338756)**2)
-    amp2[faint_pixels] = -0.041975980807126514 * signal[faint_pixels] + 0.28375014129499576
-
-    alpha1[medium_pixels] = 2643.2695863041595 * np.exp(-0.0008722598069934617 * signal[medium_pixels]) + 125.05736916420666
-    amp1[medium_pixels] = 3.311621436854758e-06 * signal[medium_pixels]**2 + -0.034646597553672186 * signal[medium_pixels] + -2.551106144746854
+    # Values fitted from Marine Martin_Lagarde Mirisim_tso modelled data,
+    # obtained by fitting the data from nnotebook extract_responsedrift_expressions.ipynb
+    alpha1[medium_pixels] = 2.59295558e+03 * np.exp(-8.57428099e-04 * signal[medium_pixels]) + 1.20593193e+02
+    amp1[medium_pixels] = 2.94507350e-06 * signal[medium_pixels]**2 + -3.27886892e-02 * signal[medium_pixels]\
+                          + -4.70669170e+00
 
     t = t_0 + np.arange(0, nb_frames) * frame  # Time sampling in seconds
     t = t[:, np.newaxis, np.newaxis]  # Prepare broadcasting
 
     prefactor1 = amp1 * alpha1
-    prefactor2 = amp2 * alpha2
 
-    ramp_difference_t_0 = prefactor1 * np.exp(-t_0 / alpha1) + prefactor2 * np.exp(-t_0 / alpha2)
+    ramp_difference_t_0 = prefactor1 * np.exp(-t_0 / alpha1)
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
-    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1) - prefactor2 * np.exp(-t / alpha2)
+    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1)
 
     LOG.debug("response_drift() | ramp shape : {}".format(ramp_difference.shape))
 
