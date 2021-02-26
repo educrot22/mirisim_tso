@@ -7,13 +7,12 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-def response_drift(original_ramp, t_0, signal, frame=0.19):
+def response_drift(original_ramp, t_0, signal, frame=0.15904):
     """
     Computes the response drift effect on the ramp. Coefficients values come from JPL tests of 2019.
 
     There are 3 modes:
-        - 0 -> 1000    : 2 exponentials
-        - 1000 -> 5000 : 1 exponential
+        - 0 -> 5000 : 1 exponential
         - over 5000    : off (no influence)
 
     /!\ Warning: Multiple integrations per file are not supported right now. The problem will come
@@ -41,7 +40,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     # - If yes, we have a det_image, and the dispatch on the different formulas needs to be done with np.where()
     # - If not, it needs to be turned into a 3D array, before np.where()
     # Can it be done outside this function ?
-    fading_threshold = 5000
+    fading_threshold = 5000  # DN/s
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
@@ -49,9 +48,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     medium_pixels = signal < fading_threshold
 
     alpha1 = np.ones_like(signal)
-    alpha2 = np.ones_like(signal)
     amp1 = np.zeros_like(signal)
-    amp2 = np.zeros_like(signal)
 
     # Values fitted from Marine Martin_Lagarde Mirisim_tso modelled data,
     # obtained by fitting the data from nnotebook extract_responsedrift_expressions.ipynb
@@ -72,7 +69,6 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     LOG.debug("response_drift() | ramp shape : {}".format(ramp_difference.shape))
 
     return ramp_difference
-
 
 def anneal_recovery(original_ramp, t_0, frame, config):
     """
