@@ -52,15 +52,30 @@ def read_configuration_file(config_file, verbose=False):
     period = float(config['orbit']['orbital_period'])*u.day
     if (verbose):
         print("rp={}, a={}, inclination={}, period={}".format(rp, a, inclination, period))
-    return rp, a, inclination
+    return rp, a, inclination, period
 
+def compute_eclipse_time( config_file, verbose=False):
+    """
+    Compute the  duration of the transit
+    :param config_file: the configration file name
+    :type rp: string
+
+    :return: duration, same unit than period
+    :rtype: quantity
+    """
+    rp, a, inclination, period = read_configuration_file(config_file, verbose=verbose)
+    transit_phase_14 = compute_eclipse_phase(rp, a, inclination, verbose=verbose)
+    transit_time_14  = transit_phase_14*period
+    return transit_time_14
+    
 ############
 if __name__ == '__main__':
     import sys
     if len(sys.argv) == 2:
       config_file = sys.argv[1]
-      rp, a, inclination = read_configuration_file(config_file, verbose=True)
+      rp, a, inclination, period = read_configuration_file(config_file, verbose=True)
       transit_phase_14 = compute_eclipse_phase(rp, a, inclination, verbose=True)
+      print('transit_time_14', transit_phase_14*period)
     else:
       print('syntax: compute_eclipse_phase configuration_file')
 
