@@ -39,6 +39,7 @@ def read_tso_spectra(in_dir, pattern='*.fits', verbose=False):
     #unit_dns = u.def_unit('DN/s', u.adu/u.second)
     u.add_enabled_units(unit_dn)
     print(unit_dn)
+    #####
     data_files = sorted(glob.glob(os.path.join(in_dir, pattern)))
     n_file = len(data_files)
     if (verbose):print(n_file)

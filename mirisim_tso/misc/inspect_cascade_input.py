@@ -13,6 +13,8 @@ from cascade.utilities.readwrite_spectra import read_spectra_dir
 
 ################
 input_dir='/Users/gastaud/test_dap/cascade/simulation_LRS/test_generic3/WASP-43b_delivery0/SPECTRA'
+# '/Users/gastaud/test_dap/cascade/simulation_LRS/test_generic3/wasp43b_bckg/SPECTRA/'
+
 output_dir = 'data_10mu_norm/'
 output_pattern = 'wasp43b'
 ################
@@ -39,23 +41,34 @@ plt.ylabel('flux '+str(flux2d.unit))
 iw, it = np.unravel_index(flux2d.argmax(), flux2d.shape)
 plt.figure()
 plt.title('light curve')
-plt.plot(ttn, flux2d[0,:], label='0')
-plt.plot(ttn, flux2d[iw,:], label=str(iw))
+plt.plot(ttn, flux2d[0,:], label="iw={}, w={:.2f}".format(0,wave1d[0]))
+plt.plot(ttn, flux2d[iw,:], label="iw={}, w={:.2f}".format(iw,wave1d[iw]))
 plt.xlabel('time in second')
 plt.ylabel('flux '+str(flux2d.unit))
 plt.legend()
 
 plt.figure()
-plt.plot(ttn, flux2d[i6,:], label='wavelength 6. micron')
-plt.plot(ttn, flux2d[i7,:], label='wavelength 7. micron')
-plt.plot(ttn, flux2d[i10,:], label='wavelength 10. micron')
-plt.plot(ttn, flux2d[i11,:], label='wavelength 11. micron')
+ligne6 = gaussian_filter1d(flux2d[i6,:].value, 3)
+ligne7 = gaussian_filter1d(flux2d[i7,:].value, 3)
+plt.plot(ttn, ligne6/ligne6.max(), label='wavelength 6. micron')
+plt.plot(ttn, ligne7/ligne7.max(), label='wavelength 7. micron')
+#plt.plot(ttn, flux2d[i10,:]/flux2d[i10,:].max(), label='wavelength 10. micron')
+#plt.plot(ttn, flux2d[i11,:]/flux2d[i11,:].max(), label='wavelength 11. micron')
 plt.legend()
 plt.xlabel('time in second')
-plt.ylabel('normalised flux')
-plt.title('wasp43-b normalised light curve')
-plt.savefig('plot_normalised_lightcurve6711.png')
+plt.ylabel('smoothed normalised flux')
+plt.title('wasp43-b smoothed normalised light curve')
+plt.savefig('plot_normalised_lightcurve67_bck.png')
 
+lignes = gaussian_filter1d(flux2d.value, 3)
+depth = (lignes.max(1) - lignes.min(1))/lignes.max(1)
+
+plt.figure()
+plt.title('wasp43-b smoothed normalised light curve  corrected bck')
+plt.plot(wave1d, depth)
+plt.xlabel('wavelength '+str(wave1d.unit))
+plt.ylabel('flux method min/max')
+plt.savefig('plot_depth_minmax_bck.png')
 
 plt.figure()
 plt.plot(wave1d)
