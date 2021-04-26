@@ -7,7 +7,80 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-def response_drift(original_ramp, t_0, signal, frame=0.19):
+def response_drift_one(original_ramp, t_0, signal, t_frame=0.159):
+    """
+    This is a simpiflied version of response_drift, with only one exponential model.
+    It computes the response drift effect on the ramp. Coefficients values come from
+    JPL tests of 2019.
+    For pixels wich values are more than 5000, bright pixel there is no drift.
+    For pixels wich values are less than 75, faint pixel there is no drift.
+    The sampling time for MIRI LRS is 0.159
+https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-detector-overview/miri-detector-subarrays
+
+    /!\ Warning: Multiple integrations per file are not supported right now. The problem will come
+                 from the t array, because for each integration you need to add the duration of
+                 all the previous integrations in the file
+
+    Parameters
+    ----------
+    :param original_ramp: hyper-cube of ramps from MIRISim det_image in DN
+                 only the shape is used !
+    :type original_ramp : np.array(nb_integrations, nb_frames, nb_y, nb_x)
+    
+    :param t_0: time since beginning of the observation in seconds
+    :type t_0: float
+    
+    :param signal: illum_image value (either full image or value for one pixel) in DN/s
+    :type signal : np.array(y, x) or float
+
+
+    :param t_frame: duration of a frame in seconds [default for MIRI-LRS = 0.159s]
+    :type t_frame: float
+
+    -------
+    :return: ramp_difference Loss of signal in DN on the ramp, same shape than original_ram
+    :rtype:np.array(nb_integrations, nb_frames, nb_y, nb_x)
+
+    """
+    # Add a test for the original ramp, if it is a 3D array. (x, y, t_0)
+    # - If yes, we have a det_image, and the dispatch on the different formulas needs to be done with np.where()
+    # - If not, it needs to be turned into a 3D array, before np.where()
+    # Can it be done outside this function ?
+    low_threshold =  75  # to avoid negative pixel
+    fading_threshold = 5000
+
+    (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
+
+    # Creating two pixels masks corresponding to two different fitting regimes
+    index = np.where( (signal > low_threshold) & (signal < fading_threshold) )
+
+    alpha1 = np.ones_like(signal)
+    amp1 = np.zeros_like(signal)
+
+    # Values fitted from JPL test data
+     
+    alpha1[index] = 2.59295558e+03 * np.exp(-8.57428099e-04 * signal[index]) + 1.20593193e+02
+
+    amp1[index] = 2.94507350e-06 * signal[index]**2 + -3.27886892e-02 * signal[index]\
+    + -4.70669170e+00
+    
+
+    t = t_0 + np.arange(0, nb_frames) * t_frame  # Time sampling in seconds
+    t = t[:, np.newaxis, np.newaxis]  # Prepare broadcasting
+
+    prefactor1 = amp1 * alpha1
+   
+    ramp_difference_t_0 = prefactor1 * np.exp(-t_0 / alpha1)
+
+    # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
+    ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1)
+
+    LOG.debug("response_drift_one() | ramp shape : {}".format(ramp_difference.shape))
+
+    return ramp_difference
+
+
+def response_drift(original_ramp, t_0, signal, frame=0.159):
     """
     Computes the response drift effect on the ramp. Coefficients values come from JPL tests of 2019.
 
@@ -29,7 +102,7 @@ def response_drift(original_ramp, t_0, signal, frame=0.19):
     signal
           illum_image value (either full image or value for one pixel) in DN/s
     frame
-         duration of a frame_time in seconds [default for MIRI-LRS = 0.19s]
+         duration of a frame_time in seconds [default for MIRI-LRS = 0.159s]
 
     Returns
     -------

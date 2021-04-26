@@ -65,6 +65,11 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
         metadatas['history'].append("MIRISim TSO: Add Response drift")
         ramp_difference = effects.response_drift(original_ramp, t_0, signal, frame_time)
         new_ramp += ramp_difference
+        
+    if config_dict["response_drift_one"]["active"]:
+        metadatas['history'].append("MIRISim TSO: Add Response drift")
+        ramp_difference = effects.response_drift_one(original_ramp, t_0, signal, frame_time)
+        new_ramp += ramp_difference
 
     if config_dict["idle_recovery"]["active"]:
         metadatas['history'].append("MIRISim TSO: Add Idle Recovery")
