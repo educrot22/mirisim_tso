@@ -25,13 +25,15 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
     ----------
     :param original_ramp: hyper-cube of ramps from MIRISim det_image in DN
                  only the shape is used !
+                 nb_y=416 and nb_x=72  without the reference columns ???
     :type original_ramp : np.array(nb_integrations, nb_frames, nb_y, nb_x)
     
     :param t_0: time since beginning of the observation in seconds
     :type t_0: float
     
     :param signal: illum_image value (either full image or value for one pixel) in DN/s
-    :type signal : np.array(y, x) or float
+         (nb_y=416, nb_x=76)   nb_x includes 4 reference columns
+    :type signal : np.array(nb_y, nb_x) or float
 
 
     :param t_frame: duration of a frame in seconds [default for MIRI-LRS = 0.159s]
@@ -39,7 +41,8 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
 
     -------
     :return: ramp_difference Loss of signal in DN on the ramp, same shape than original_ram
-    :rtype:np.array(nb_integrations, nb_frames, nb_y, nb_x)
+              the dimensions are chosen to be  hypercube to be compatible with original_ramp
+    :rtype:np.array(1, nb_integrations, nb_frames, nb_y, nb_x)
 
     """
     # Add a test for the original ramp, if it is a 3D array. (x, y, t_0)
@@ -50,6 +53,11 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
     fading_threshold = 5000
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
+    
+    (nbs_y, nbs_x) = signal.shape
+    if( nbs_x == (nb_x+4)):
+        print('warning problem of reference pixels, remove the 4 first columns from illumination model')
+        signal = signal[:,4:]
 
     # Creating two pixels masks corresponding to two different fitting regimes
     index = np.where( (signal > low_threshold) & (signal < fading_threshold) )
@@ -74,7 +82,8 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1)
-
+    #import pdb pdb.set_trace()
+    ramp_difference = ramp_difference.reshape([1, nb_frames, nb_y, nb_x]) # RG convention hypercube
     LOG.debug("response_drift_one() | ramp shape : {}".format(ramp_difference.shape))
 
     return ramp_difference

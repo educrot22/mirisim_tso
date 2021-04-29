@@ -50,8 +50,10 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
 
     LOG.debug("Post-Treatment for folder {}".format(simulation_folder))
 
-    det_images_filename = os.path.join(simulation_folder, "det_images", "det_image_seq1_MIRIMAGE_P750Lexp1.fits")
-    illum_models_filename = os.path.join(simulation_folder, "illum_models", "illum_model_1_MIRIMAGE_P750L.fits")
+    det_images_filename = glob.glob(os.path.join(simulation_folder, "det_images", "det_image_*.fits"))[0]
+        #"det_image_seq1_MIRIMAGE_P750Lexp1.fits")
+    illum_models_filename = glob.glob(os.path.join(simulation_folder, "illum_models", "illum_model_*.fits"))[0]
+    #"illum_model_1_MIRIMAGE_P750L.fits")
 
     signal = utils.read_illum_model(illum_models_filename)
     original_ramp, header = utils.read_det_image(det_images_filename)
@@ -120,11 +122,11 @@ def sequential_lightcurve_post_treatment(conf):
         sys.exit()
 
     folder = config_dict["simulations"]["dir"]
-
+    filtername = config_dict["simulations"]["filtername"]
     mask = utils.read_mask()
 
     # List simulations
-    simulations = glob.glob(os.path.join(folder, "*/"))
+    simulations = glob.glob(os.path.join(folder, filtername))
     simulations.sort()
 
     if len(simulations) == 0:
