@@ -1,6 +1,7 @@
 """
 Post-treatment of MIRISim simulations for exoplanets time-serie observations
 (Martin-Lagarde | CEA-Saclay | 2019)
+update data['time'] RG 30 April 2021 
 """
 import os
 from . import utils
@@ -141,7 +142,8 @@ def sequential_lightcurve_post_treatment(conf):
     timedat = os.path.join(folder, "times.dat")
     data = ascii.read(timedat)
 
-    t_start = data["t_start"].data
+    t_start = data["time"].data
+    # t_start = data["t_start"].data obsolete since version 1.0.0
     simulation_start_time = {}
     for sim in simulations:
         simulation_start_time[sim] = t_start[simulation_index[sim]]

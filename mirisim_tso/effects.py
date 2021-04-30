@@ -56,7 +56,7 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
     
     (nbs_y, nbs_x) = signal.shape
     if( nbs_x == (nb_x+4)):
-        print('warning problem of reference pixels, remove the 4 first columns from illumination model')
+        LOG.warning('problem of reference pixels,{} remove the 4 first columns from illumination model{}'.format(original_ramp.shape, signal.shape))
         signal = signal[:,4:]
 
     # Creating two pixels masks corresponding to two different fitting regimes
