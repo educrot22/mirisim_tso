@@ -56,6 +56,11 @@ For developers, create a symbolic link so that each time the code is changed, th
 pip install -e .
 ----
 
+Beware, there is a compressed FITS file, MIRI_FM_MIRIMAGE_MASK_07.02.01.fits.gz, in the git,
+https://gitlab.com/mmartin-lagarde/mirisim_tso/-/tree/master/mirisim_tso/data
+This contains the mask, which is used for not computing the Poisson noise on the pixels which are flagged bad.
+(trying to compute the Poisson distribution of a negative parameter crashes the system) 
+
 == Configuration
 This section describe all parameters available in the configuration file for mirisim_tso.
 Each subsection represent a section of the .ini file
@@ -64,14 +69,19 @@ Each subsection represent a section of the .ini file
 [source, ini]
 ----
 [simulations]
-dir = "MIRI_1Integration"
+dir = "/Users/gastaud/test_dap/cascade/simulation_LRS/"
+filtername = "simulation_*"
 overwrite = True
 ----
+The program shall process the folders (dir, filtername), in our example
+/Users/gastaud/test_dap/cascade/simulation_LRS/simulation_000 to
+/Users/gastaud/test_dap/cascade/simulation_LRS/simulation_999 .
 
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Parameter |Type / Unit | Description
-|dir | str | Folder name. All folders found in this folder will be assumed to be MIRISim simulations
+|dir | str | Folder name. All folders found in this folder and whose name begins with filtername will be assumed to be MIRISim simulations
+|filtername | str | filter the folders in dir
 |overwrite | bool | Existing level 1B files are *NOT* overwriting, even with `overwrite=True`.
 However, for each combination of effect, a specific file is created.
 This file will be overwritten if this parameter is *True*
@@ -92,6 +102,22 @@ active = true
 |=======================================================================
 |Parameter |Type / Unit | Description
 |active | bool | Activate Response Drift
+|=======================================================================
+
+
+=== response_drift_one
+Same systematics than before, just the comput is different, using only one exponential.
+
+[source, ini]
+----
+[response_drift_one]
+active = true
+----
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate Response Drift One
 |=======================================================================
 
 === idle_recovery
@@ -231,3 +257,8 @@ The author is partly funded by a CNES grant. The research leading to these devel
 == References
 The reference articles for the calculations used in the code are the following :   
 - D.Dicken et al. _in prep_
+
+== Annex
+The directory misc contains routines and scripts for the developpers (sandbox).
+
+
