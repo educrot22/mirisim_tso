@@ -303,5 +303,5 @@ def poisson_noise(original_ramp, mask):
     bad_pixels = np.broadcast_to(mask, original_ramp.shape)
     noised_ramp[bad_pixels] = original_ramp[bad_pixels]
 
-    LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
+    LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(noised_ramp.shape, noised_ramp.dtype))
     return noised_ramp
