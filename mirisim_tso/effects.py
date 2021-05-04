@@ -84,7 +84,8 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1)
     #import pdb pdb.set_trace()
     ramp_difference = ramp_difference.reshape([1, nb_frames, nb_y, nb_x]) # RG convention hypercube
-    LOG.debug("response_drift_one() | ramp shape : {}".format(ramp_difference.shape))
+    ramp_difference = np.float32(ramp_difference)
+    LOG.debug("response_drift_one() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
 
     return ramp_difference
 
@@ -156,10 +157,10 @@ def response_drift(original_ramp, t_0, signal, frame=0.159):
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1) - prefactor2 * np.exp(-t / alpha2)
+    ramp_difference = np.float32(ramp_difference)
+    LOG.debug("response_drift() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
 
-    LOG.debug("response_drift() | ramp shape : {}".format(ramp_difference.shape))
-
-    return ramp_difference
+    return np.float32(ramp_difference)
 
 
 def anneal_recovery(original_ramp, t_0, frame, config):
@@ -207,8 +208,8 @@ def anneal_recovery(original_ramp, t_0, frame, config):
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-(t + anneal_time) / beta1) - prefactor2 * np.exp(-(t + anneal_time) / beta2)
-
-    LOG.debug("anneal_recovery() | ramp shape : {}".format(ramp_difference.shape))
+    ramp_difference = np.float32(ramp_difference)
+    LOG.debug("anneal_recovery() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
     return ramp_difference
 
 
@@ -250,15 +251,19 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - (amp1 * alpha1) * np.exp(-t / alpha1)
-
-    LOG.debug("idle_recovery() | ramp shape : {}".format(ramp_difference.shape))
+    ramp_difference = np.float32(ramp_difference)
+    LOG.debug("idle_recovery() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
     return ramp_difference
 
 
 def poisson_noise(original_ramp, mask):
     """
     Compute Poisson noise on all integration of a det_image data cube.
-
+    We follow the technical note of Massimo Roberto WFC3-2007-12.pdf, paragraph 2.4, equation 1.40
+    y_i = y_i-1 + p_i
+    where the various p_i are statistically independent packets of electrons.
+    So the Poisson distribution is applied to p_i, not y_i
+    http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/SUR_vs_CDS.pdf
     Parameters
     ----------
     original_ramp:
@@ -273,23 +278,29 @@ def poisson_noise(original_ramp, mask):
     data cube with Poisson noise added (this is not a ramp difference, this is the full ramp)
 
     """
+    # get the shape and check that the cube is 4D
+    (nb_integrations, nb_frames, nb_y, nb_x) =  original_ramp.shape
+    # create the hypercube of differences in electron
+    #  I duplicate the  first image of difference
+    frame_differences = np.diff(original_ramp, axis=1)
+    first_difference = frame_differences[0,0,:,:]
+    first_difference = first_difference.reshape([1, 1, nb_y, nb_x])
+    frame_differences = np.append(first_difference, frame_differences, axis=1)
+    # now frame_differences has the same shpae than original_ramp
 
-    frame_differences = np.diff(original_ramp, axis=1) * c.gain
-    # Poisson noise must be made on electron, not DN, or the noise will be too high
-    # noise on 20 DN: sqrt(20) * 5.5 = 24.6 electrons
-    # noise on 20*5.5 electrons: sqrt(20*5.5) = 10.5 electrons
-    first_frame = original_ramp[:, 0, :, :]
-    first_frame = first_frame[:, np.newaxis, :, :]
-    frame_differences = np.append(first_frame, frame_differences, axis=1)
+    # add the noise, comput in electron
+    frame_noise = np.float32(np.random.poisson(frame_differences*c.gain))/c.gain
+    
+    # add the first image of the ramp
+    frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])
 
-    single_frame_noise = np.random.poisson(abs(frame_differences)) / c.gain
-
-    noised_ramp = np.cumsum(single_frame_noise, axis=1)
+    # cumulative sum
+    noised_ramp = np.cumsum(frame_noise, axis=1)
 
     # This works only for the good pixels (which accumulate signal). We use the bad pixels CDP from MIRISim
     # Overwrite bad pixels with the original value.
     bad_pixels = np.broadcast_to(mask, original_ramp.shape)
     noised_ramp[bad_pixels] = original_ramp[bad_pixels]
 
-    LOG.debug("poisson_noise() |  noised ramp shape : {}".format(noised_ramp.shape))
+    LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
     return noised_ramp
