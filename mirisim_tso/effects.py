@@ -289,7 +289,8 @@ def poisson_noise(original_ramp, mask):
     # now frame_differences has the same shpae than original_ramp
 
     # add the noise, comput in electron
-    frame_noise = np.float32(np.random.poisson(frame_differences*c.gain))/c.gain
+    ## BUG PATCH NP.ABS
+    frame_noise = np.float32(np.random.poisson(np.abs(frame_differences*c.gain)))/c.gain
     
     # add the first image of the ramp
     frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])
