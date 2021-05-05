@@ -288,9 +288,16 @@ def poisson_noise(original_ramp, mask):
     frame_differences = np.append(first_difference, frame_differences, axis=1)
     # now frame_differences has the same shpae than original_ramp
 
-    # add the noise, comput in electron
-    ## BUG PATCH NP.ABS
-    frame_noise = np.float32(np.random.poisson(np.abs(frame_differences*c.gain)))/c.gain
+    # add the noise, comput in electron, only for good pixels
+    good_pixels = np.broadcast_to(np.invert(mask), original_ramp.shape)
+    frame_noise = np.zeros([nb_integrations, nb_frames, nb_y, nb_x], dtype=np.float32)
+    ii = np.where(frame_differences[good_pixels] < 0)
+    nb_negatif = len(ii[0])
+    if (np.min(frame_differences[good_pixels]) < 0):
+        print("poisson_noise minimum", np.min(frame_differences[good_pixels]), nb_negatif)
+        LOG.error("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
+    
+    frame_noise[good_pixels] = np.float32(np.random.poisson(frame_differences[good_pixels]*c.gain)/c.gain)
     
     # add the first image of the ramp
     frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])

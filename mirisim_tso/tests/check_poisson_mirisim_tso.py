@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #
 #from mirisim_tso import effects
-###from mirisim_tso.effects import poisson_noise
-from add_poisson_noise import add_poisson_noise as poisson_noise
+from mirisim_tso.effects import poisson_noise
+#from add_poisson_noise import add_poisson_noise as poisson_noise
 ###
 
 cube = np.arange(5*4*3).reshape([1,3,4,5]) +1.
@@ -47,5 +47,21 @@ plt.title('test of mirsim tso poisson_noise rene')
 plt.savefig('plot_mirsim tso poisson_noise_rene.png')
 
 result_s = result.std(axis=0)
+result_s = result.std(axis=0)
+print('result_s min={:5.3f}, mean={:5.3f}, max={:5.3f}, ref={:5.3f}, shape={:}, dtype={:}'.\
+    format(result_s.min(), result_s.mean(), result_s.max(), ss, result_s.shape, result_s.dtype))
 
+# result_s min=0.000, mean=25.051, max=33.407, ref=18.366, shape=(3, 4, 5), dtype=float32
+
+
+############
+##  test one bad pixel, masked
+mask[3,2]=True
+cube[0,2,3,2] = 10
+result = poisson_noise(cube, mask)
+print('result', result.min(), result.max(), result.shape, result.dtype)
+
+## add one error
+cube[0,2,2,2] = 10
+result = poisson_noise(cube, mask)
 
