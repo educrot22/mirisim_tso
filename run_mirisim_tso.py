@@ -4,13 +4,20 @@
 """
 Example of how to use the mirisim_tso package
 """
-
+import time
+import sys
+#
 import mirisim_tso
-
+#
+if len(sys.argv) > 1:
+    config_filename= sys.argv[1]
+else:
+    print("Error: You need to provide an .ini filename as argument of the script")
+    sys.exit()
+#
+start_time = time.time()
+print('mirisim_tso', mirisim_tso.__version__, config_filename)
 mirisim_tso.utils.init_log(stdout_loglevel="INFO", file_loglevel="DEBUG")
-
-simulation_name = "./simulation_870"
-
-config_filename = "post_treatment.ini"
-
-mirisim_tso.single_simulation_post_treatment(simulation_folder=simulation_name, t_0=0., conf=config_filename)
+mirisim_tso.sequential_lightcurve_post_treatment(config_filename)
+elapsed_time = time.time() - start_time
+print('elapsed time:', elapsed_time)
