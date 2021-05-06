@@ -3,6 +3,7 @@ Post-treatment of MIRISim simulations for exoplanets time-serie observations
 (Martin-Lagarde | CEA-Saclay | 2019)
 update data['time'] RG 30 April 2021 
 """
+import sys
 import os
 from . import utils
 from . import effects
@@ -172,3 +173,13 @@ def sequential_lightcurve_post_treatment(conf):
         simu_i += 1
         LOG.info("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
         single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask)
+
+
+if __name__ == "__main__":
+    """ get input and output files and do rotation
+    """
+    if (len(sys.argv) < 1):
+        print('Fatal ERROR: ')
+        print('usage: ./main.py configuration_filename')
+    else:
+        sequential_lightcurve_post_treatment(sys.argv[1])
