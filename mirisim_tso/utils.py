@@ -179,7 +179,7 @@ def update_dict(d, u):
     return d
 
 
-def write_det_image_with_effects(original_path, new_data, extra_metadata, config, overwrite=True):
+def write_det_image_with_effects(original_path, new_path, new_data, extra_metadata, config, overwrite=True):
     """
     Based on the original .fits file, will overwrite the data cube with the one given
     in parameter.
@@ -190,6 +190,8 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, config
     Parameters
     ----------
     original_path: str
+        Full path (relative or absolute) with filename of the input det_image
+    new_path: str
         Full path (relative or absolute) with filename of the input det_image
     new_data: np.ndarray
         new data cube (nb_integrations, nb_groups, nb_y, nb_x)
@@ -205,6 +207,7 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, config
     """
 
     # Construct name depending on effect activated
+
     final_dir = "det_images"
 
     if config["response_drift"]["active"]:
@@ -223,10 +226,10 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, config
     if final_dir == "det_images":
         LOG.warning("All effects are deactivated, not writing any output")
         return
-
+    """
     original_name = os.path.basename(original_path)
     original_dir = os.path.dirname(original_path)
-
+    """
     hdulist = fits.open(original_path)
 
     # Replace existing data
@@ -246,13 +249,14 @@ def write_det_image_with_effects(original_path, new_data, extra_metadata, config
     # Update the rest of the parameters
     metadata.update(extra_metadata)
 
+    """
     new_path = os.path.abspath(os.path.join(original_dir, os.path.pardir, final_dir))
-
     if not os.path.isdir(new_path):
         os.mkdir(new_path)
-
     new_path = os.path.join(new_path, original_name)
-    hdulist.writeto(new_path, overwrite=overwrite)
+    """
+    
+    hdulist.writeto(new_path+final_dir+'.fits', overwrite=overwrite)
 
 
 def get_nested(data, args):

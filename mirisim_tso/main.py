@@ -15,7 +15,7 @@ from . import version
 
 LOG = logging.getLogger(__name__)
 
-def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
+def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None):
     """
     Apply post treatment to a single simulation folder.
 
@@ -29,6 +29,10 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
         path (relative or absolute) to the MIRISim simulation folder (the one that contains det_images/illum_models folder)
     t_0: float
         Time in second since beginning of the observation (beginning of observation is considered to be t = 0s)
+        
+    phase: float
+            orbital phase, no unit, zero or integer values for mid-transit
+
     conf: str or dict
         name of the ConfigObj .ini file, or corresponding dictionnary
     mask:
@@ -61,7 +65,10 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
     frame_time = header["TFRAME"]
+    
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)]}
+    metadatas['time_0']= t_0
+    metadatas['phase']= phase
 
     new_ramp = original_ramp.copy()
     if config_dict["response_drift"]["active"]:
@@ -95,16 +102,18 @@ def single_simulation_post_treatment(simulation_folder, t_0, conf, mask=None):
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
     # TODO Add the time-stamp in BJD to the file header.
-
+    
+    output_folder = config_dict["simulations"]["output_dir"]
+    output_filename = os.path.join(output_folder, os.path.basename(simulation_folder))
+    
     # Write fits file
-    utils.write_det_image_with_effects(det_images_filename, new_data=new_ramp, extra_metadata=metadatas, config=config_dict,
+    utils.write_det_image_with_effects(det_images_filename, output_filename,  new_data=new_ramp, extra_metadata=metadatas, config=config_dict,
                                        overwrite=config_dict["simulations"]["overwrite"])
 
 
 def sequential_lightcurve_post_treatment(conf):
     """
-
-    :param str folder: Folder that contain all the simulation folders for that light curve
+    Add the post treatement, integration per integration
     :param conf: name of the ConfigObj .ini file, or corresponding dictionary
     :type conf: str or Dict
 
@@ -122,31 +131,39 @@ def sequential_lightcurve_post_treatment(conf):
         LOG.error("conf parameter needs to be str or dict")
         sys.exit()
 
-    folder = config_dict["simulations"]["dir"]
+    output_folder = config_dict["simulations"]["output_dir"]
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+        LOG.debug("main() create output director "+output_folder)
+    input_folder = config_dict["simulations"]["input_dir"]
     filtername = config_dict["simulations"]["filtername"]
     mask = utils.read_mask()
 
     # List simulations
-    simulations = glob.glob(os.path.join(folder, filtername))
+    simulations = glob.glob(os.path.join(input_folder, filtername))
     simulations.sort()
 
     if len(simulations) == 0:
-        raise ValueError("No simulations found in {}.".format(folder))
+        raise ValueError("No simulations found in {}.".format(input_folder))
 
     simulation_index = {}  # key: simulation folder ; value: simulation index (int)
     for sim in simulations:
-        idx = int(sim.split("_")[-1][:-1])
+        idx = int(sim.split("_")[-1])
         simulation_index[sim] = idx
 
     # Create time array
-    timedat = os.path.join(folder, "times.dat")
+    timedat = os.path.join(input_folder, "times.dat")
     data = ascii.read(timedat)
-
     t_start = data["time"].data
     # t_start = data["t_start"].data obsolete since version 1.0.0
+    orbital_phase = data["phase"]
+    index = data['file_index'].astype(int)
+    
     simulation_start_time = {}
+    simulation_orbital_phase = {}
     for sim in simulations:
         simulation_start_time[sim] = t_start[simulation_index[sim]]
+        simulation_orbital_phase[sim] = orbital_phase[simulation_index[sim]]
 
     # Run each simulation post treatment, one after the other
     nb_simulations = len(simulations)
@@ -154,4 +171,4 @@ def sequential_lightcurve_post_treatment(conf):
     for simulation in simulations:
         simu_i += 1
         LOG.info("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
-        single_simulation_post_treatment(simulation, simulation_start_time[simulation], config_dict, mask=mask)
+        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask)

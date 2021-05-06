@@ -283,21 +283,28 @@ def poisson_noise(original_ramp, mask):
     # create the hypercube of differences in electron
     #  I duplicate the  first image of difference
     frame_differences = np.diff(original_ramp, axis=1)
+    # diff = original_ramp[:,1:,:,:] - original_ramp[:,0:-1,:,:] equivalent
     first_difference = frame_differences[0,0,:,:]
     first_difference = first_difference.reshape([1, 1, nb_y, nb_x])
     frame_differences = np.append(first_difference, frame_differences, axis=1)
-    # now frame_differences has the same shpae than original_ramp
+    # now frame_differences has the same shape than original_ramp
 
-    # add the noise, comput in electron, only for good pixels
+    #
+    ## beware, we have some negative pixels because of the RON applied before
     good_pixels = np.broadcast_to(np.invert(mask), original_ramp.shape)
     frame_noise = np.zeros([nb_integrations, nb_frames, nb_y, nb_x], dtype=np.float32)
-    ii = np.where(frame_differences[good_pixels] < 0)
+    # I create the variable good_frame_differences because I was not able to
+    #  frame_differences[good_pixels][ii] = 0  does not work !
+    good_frame_differences = frame_differences[good_pixels]
+    ii = np.where(good_frame_differences < 0)
+    good_frame_differences[ii] = 0
     nb_negatif = len(ii[0])
     if (np.min(frame_differences[good_pixels]) < 0):
         print("poisson_noise minimum", np.min(frame_differences[good_pixels]), nb_negatif)
-        LOG.error("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
-    
-    frame_noise[good_pixels] = np.float32(np.random.poisson(frame_differences[good_pixels]*c.gain)/c.gain)
+        LOG.warning("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
+        
+    # add the noise, comput in electron, only for good pixels
+    frame_noise[good_pixels] = np.float32(np.random.poisson(good_frame_differences*c.gain)/c.gain)
     
     # add the first image of the ramp
     frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])
