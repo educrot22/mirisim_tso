@@ -70,6 +70,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)]}
     metadatas['time_0']= t_0
     metadatas['phase']= phase
+    metadatas['TSOVISIT'] = 'T'  # from Sarah KENDREW 
 
     new_ramp = original_ramp.copy()
     if config_dict["response_drift"]["active"]:
