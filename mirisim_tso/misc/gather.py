@@ -1,7 +1,9 @@
 # GATHER
 # gathers all  the files which contains only one integration per file of 2 GB
 # Author Rene Gastaud, rene.gastaud@cea.fr
-#    11 May 2021
+# creation date   11 May 2021
+# modification 12 May 2021 : TSOVISIT boolean, update EFFEXPTM and DURATION
+
 
 from astropy.io import fits
 import glob
@@ -71,6 +73,12 @@ def gather(pattern):
                 hdul_out[0].header['EXPSTART'] = intstart*t_file
                 hdul_out[0].header['EXPEND']   = intend*t_file
                 hdul_out[0].header['EXPMID']   = (intstart+intend)*t_file/2
+                # May, the 12th
+                hdul_out[0].header['TSOVISIT']=True
+                integration_time = hdul_out[0].header['EFFINTTM']
+                hdul_out[0].header['EFFEXPTM'] = nints*integration_time
+                hdul_out[0].header['DURATION'] = nints*integration_time
+                #
                 hdul_out.writeto(out_file+str(exsegnum)+'.fits')
                 #  reset
                 intstart = intend+1
