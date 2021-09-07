@@ -11,10 +11,12 @@ import logging
 import sys
 import glob
 from astropy.io import ascii
+import time
 
 from . import version
 
 LOG = logging.getLogger(__name__)
+
 
 def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None):
     """
@@ -67,10 +69,8 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
 
     frame_time = header["TFRAME"]
     
-    metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)]}
-    metadatas['time_0']= t_0
-    metadatas['phase']= phase
-    metadatas['TSOVISIT'] = 'T'  # from Sarah KENDREW 
+    metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)], 'time_0' : t_0,
+                 'phase': phase, 'TSOVISIT': 'T'}
 
     new_ramp = original_ramp.copy()
     if config_dict["response_drift"]["active"]:
@@ -122,7 +122,11 @@ def sequential_lightcurve_post_treatment(conf):
     :return:
     """
 
-    utils.init_log(stdout_loglevel="DEBUG", file_loglevel="DEBUG")
+    utils.init_log(stdout_loglevel="INFO", file_loglevel="DEBUG")
+    LOG.info('Mirisim_TSO launched')
+    LOG.info('"mirisim_tso.log" file created')
+
+    start_time = time.time()
 
     # Read configuration file only once, and pass the dictionary to subsequent calls
     if isinstance(conf, str):
@@ -130,13 +134,13 @@ def sequential_lightcurve_post_treatment(conf):
     elif isinstance(conf, dict):
         config_dict = conf
     else:
-        LOG.error("conf parameter needs to be str or dict")
+        LOG.error("Configuration file parameter needs to be str or dict")
         sys.exit()
 
     output_folder = config_dict["simulations"]["output_dir"]
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-        LOG.debug("main() create output director "+output_folder)
+    LOG.info("Output directory is : "+output_folder)
     input_folder = config_dict["simulations"]["input_dir"]
     filtername = config_dict["simulations"]["filtername"]
     mask = utils.read_mask()
@@ -170,7 +174,13 @@ def sequential_lightcurve_post_treatment(conf):
     # Run each simulation post treatment, one after the other
     nb_simulations = len(simulations)
     simu_i = 0
+    LOG.info('Calculating...')
     for simulation in simulations:
         simu_i += 1
-        LOG.info("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
+        LOG.debug(' ')
+        LOG.debug("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
         single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask)
+
+    LOG.info('Done !')
+    elapsed_time = time.time() - start_time
+    LOG.info(f'Job done in : {elapsed_time} s')

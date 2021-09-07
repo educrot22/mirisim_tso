@@ -70,7 +70,7 @@ def read_illum_model(illum_model_filename):
         return slope_array
 
     else:
-        print("ERROR :: The illum_model file shall be a .fits file !")
+        LOG.error("ERROR :: The illum_model file shall be a .fits file !")
         raise ValueError
 
 

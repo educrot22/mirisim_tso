@@ -8,3 +8,4 @@ from .version import __version__
 
 import logging
 logging.getLogger('mirisim_tso').addHandler(logging.NullHandler())
+

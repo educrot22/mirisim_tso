@@ -56,7 +56,7 @@ https://jwst-docs.stsci.edu/mid-infrared-instrument/miri-instrumentation/miri-de
     
     (nbs_y, nbs_x) = signal.shape
     if( nbs_x == (nb_x+4)):
-        LOG.warning('problem of reference pixels,{} remove the 4 first columns from illumination model{}'.format(original_ramp.shape, signal.shape))
+        #LOG.warning('problem of reference pixels,{} remove the 4 first columns from illumination model{}'.format(original_ramp.shape, signal.shape))
         signal = signal[:,4:]
 
     # Creating two pixels masks corresponding to two different fitting regimes
@@ -300,8 +300,9 @@ def poisson_noise(original_ramp, mask):
     good_frame_differences[ii] = 0
     nb_negatif = len(ii[0])
     if (np.min(frame_differences[good_pixels]) < 0):
-        print("poisson_noise minimum", np.min(frame_differences[good_pixels]), nb_negatif)
-        LOG.warning("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
+        pass
+        LOG.debug(f"poisson_noise minimum {np.min(frame_differences[good_pixels])} {nb_negatif}")
+        LOG.debug("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
         
     # add the noise, comput in electron, only for good pixels
     frame_noise[good_pixels] = np.float32(np.random.poisson(good_frame_differences*c.gain)/c.gain)
