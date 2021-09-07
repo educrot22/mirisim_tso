@@ -122,25 +122,26 @@ def sequential_lightcurve_post_treatment(conf):
     :return:
     """
 
-    utils.init_log(stdout_loglevel="INFO", file_loglevel="DEBUG")
-    LOG.info('Mirisim_TSO launched')
-    LOG.info('"mirisim_tso.log" file created')
-
-    start_time = time.time()
-
     # Read configuration file only once, and pass the dictionary to subsequent calls
     if isinstance(conf, str):
         config_dict = utils.get_config(conf)
     elif isinstance(conf, dict):
         config_dict = conf
     else:
-        LOG.error("Configuration file parameter needs to be str or dict")
+        sys.stdout.write("Configuration file parameter needs to be str or dict")
         sys.exit()
 
     output_folder = config_dict["simulations"]["output_dir"]
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    LOG.info("Output directory is : "+output_folder)
+
+    utils.init_log(log=os.path.join(output_folder, 'mirisim_tso.log'), stdout_loglevel="INFO", file_loglevel="DEBUG")
+    LOG.info('Mirisim_TSO launched')
+    LOG.info('"mirisim_tso.log" file created')
+    LOG.info("Output directory is : " + output_folder)
+
+    start_time = time.time()
+
     input_folder = config_dict["simulations"]["input_dir"]
     filtername = config_dict["simulations"]["filtername"]
     mask = utils.read_mask()
