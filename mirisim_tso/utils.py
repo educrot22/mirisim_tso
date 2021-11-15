@@ -12,6 +12,8 @@ import configobj
 
 from . import constants as c
 
+##  RG  15 nov 2021  change read_illum_model
+
 LOG = logging.getLogger(__name__)
 
 def read_det_image(filename):
@@ -59,7 +61,7 @@ def read_illum_model(illum_model_filename):
 
     if ext==".fits":
         hdulist      = fits.open(illum_model_filename)
-        illumination = hdulist['INTENSITY'].data
+        illumination = (hdulist['INTENSITY'].data).squeeze() # RG  15 nov 2021
         hdulist.close()
 
         # Add reference pixel to illum models to match size of det_images
