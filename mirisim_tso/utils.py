@@ -33,7 +33,7 @@ def read_det_image(filename):
 
     try:
         hdulist = fits.open(filename)
-        hypercube_image=hdulist[1].data.squeeze() ##  RG DA 16 nov 2021
+        hypercube_image=hdulist[1].data 
         header = hdulist[0].header
         hdulist.close()
 
