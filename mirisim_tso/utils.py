@@ -13,7 +13,7 @@ import configobj
 from . import constants as c
 
 ##  RG  15 nov 2021  change read_illum_model
-##  RG DA 16 nov 2021 change read_mask
+##  RG DA 16 nov 2021 change read_mask and read_det_image
 
 LOG = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def read_det_image(filename):
 
     try:
         hdulist = fits.open(filename)
-        hypercube_image=hdulist[1].data
+        hypercube_image=hdulist[1].data.squeeze() ##  RG DA 16 nov 2021
         header = hdulist[0].header
         hdulist.close()
 
@@ -351,6 +351,7 @@ def read_mask(filename, mode="LRS"):
 
     with fits.open(filename) as hdulist:
         mask = hdulist[1].data.astype(bool)
+        mask = mask.sqeeze() # defensive coding
         
     if (mode == "LRS") :
         # Fake metadata dictionnary of a SLITLESS LRS det_images
