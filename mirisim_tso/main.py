@@ -15,6 +15,8 @@ import time
 
 from . import version
 
+##  RG DA 16 nov 2021 change read_mask
+
 LOG = logging.getLogger(__name__)
 
 
@@ -97,7 +99,9 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     # Apply poisson noise after all the other effects are applied
     if config_dict["noise"]["active"]:
         if mask is None:
-            mask = utils.read_mask()  # TODO include path to CDP MASK in ini file
+            mask_file = config_dict["noise"]["mask_file"]
+            mode = config_dict["noise"]["mode"]
+            mask = utils.read_mask(mask_file, mode)  # TODO include path to CDP MASK in ini file
         metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
         new_ramp = effects.poisson_noise(new_ramp, mask)
 

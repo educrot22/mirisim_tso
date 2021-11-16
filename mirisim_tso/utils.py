@@ -13,6 +13,7 @@ import configobj
 from . import constants as c
 
 ##  RG  15 nov 2021  change read_illum_model
+##  RG DA 16 nov 2021 change read_mask
 
 LOG = logging.getLogger(__name__)
 
@@ -336,31 +337,34 @@ def progressBar(value, endvalue, message, bar_length=20):
     sys.stdout.flush()
 
 
-def read_mask():
+def read_mask(filename, mode="LRS"):
     """
-    Read MIRI CDP MASK and return mask cropped for a SLITLESS observation
+    Read MIRI CDP MASK and return mask cropped for a SLITLESS observation (mode = LRS)
 
     :param str filename: path to CDP file
-
+    :param str mode: if LRS crop the full mask (default)
     :return: cropped mask (False if good, True if rejected)
     :rtype: ndarray(bool)
     """
 
-    filename = pkg_resources.resource_filename("mirisim_tso", "data/MIRI_FM_MIRIMAGE_MASK_07.02.01.fits.gz")
-
-    # Fake metadata dictionnary of a SLITLESS LRS det_images
-    metadata = {}
-    metadata["SUBSTRT1"] = 1  # Starting pixel in axis 1 direction
-    metadata["SUBSTRT2"] = 529  # Starting pixel in axis 2 direction
-    metadata["SUBSIZE1"] = 72  # Number of pixels in axis 1 direction
-    metadata["SUBSIZE2"] = 416  # Number of pixels in axis 2 direction
-
-    x_start = metadata["SUBSTRT1"] - 1
-    y_start = metadata["SUBSTRT2"] - 1
-    x_stop = x_start + metadata["SUBSIZE1"]
-    y_stop = y_start + metadata["SUBSIZE2"]
+    #filename = pkg_resources.resource_filename("mirisim_tso", "data/MIRI_FM_MIRIMAGE_MASK_07.02.01.fits.gz")
 
     with fits.open(filename) as hdulist:
         mask = hdulist[1].data.astype(bool)
+        
+    if (mode == "LRS") :
+        # Fake metadata dictionnary of a SLITLESS LRS det_images
+        metadata = {}
+        metadata["SUBSTRT1"] = 1  # Starting pixel in axis 1 direction
+        metadata["SUBSTRT2"] = 529  # Starting pixel in axis 2 direction
+        metadata["SUBSIZE1"] = 72  # Number of pixels in axis 1 direction
+        metadata["SUBSIZE2"] = 416  # Number of pixels in axis 2 direction
 
-    return mask[y_start:y_stop, x_start:x_stop]
+        x_start = metadata["SUBSTRT1"] - 1
+        y_start = metadata["SUBSTRT2"] - 1
+        x_stop = x_start + metadata["SUBSIZE1"]
+        y_stop = y_start + metadata["SUBSIZE2"]
+        mask = mask[y_start:y_stop, x_start:x_stop]
+    
+
+    return mask
