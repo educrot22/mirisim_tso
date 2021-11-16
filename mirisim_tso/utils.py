@@ -351,7 +351,7 @@ def read_mask(filename, mode="LRS"):
 
     with fits.open(filename) as hdulist:
         mask = hdulist[1].data.astype(bool)
-        mask = mask.sqeeze() # defensive coding
+        mask = mask.squeeze() # defensive coding
         
     if (mode == "LRS") :
         # Fake metadata dictionnary of a SLITLESS LRS det_images
