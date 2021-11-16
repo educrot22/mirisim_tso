@@ -99,9 +99,9 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     # Apply poisson noise after all the other effects are applied
     if config_dict["noise"]["active"]:
         if mask is None:
-            mask_file = config_dict["noise"]["mask_file"]
-            mode = config_dict["noise"]["mode"]
-            mask = utils.read_mask(mask_file, mode)  # TODO include path to CDP MASK in ini file
+            mask_file = config_dict["CDP"]["mask_file"]
+            mode = config_dict["CDP"]["mode"]
+            mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
         metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
         new_ramp = effects.poisson_noise(new_ramp, mask)
 
@@ -148,7 +148,9 @@ def sequential_lightcurve_post_treatment(conf):
 
     input_folder = config_dict["simulations"]["input_dir"]
     filtername = config_dict["simulations"]["filtername"]
-    mask = utils.read_mask()
+    mask_file = config_dict["CDP"]["mask_file"]
+    mode = config_dict["CDP"]["mode"]
+    mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
 
     # List simulations
     simulations = glob.glob(os.path.join(input_folder, filtername))
