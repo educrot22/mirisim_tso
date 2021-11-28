@@ -1,7 +1,8 @@
 """
 Post-treatment of MIRISim simulations for exoplanets time-serie observations
 (Martin-Lagarde | CEA-Saclay | 2019)
-update data['time'] RG 30 April 2021 
+update data['time'] RG 30 April 2021
+update metadata 'TSOVISIT': True instead of 'T' RG 28 nov 2021
 """
 import sys
 import os
@@ -72,7 +73,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     frame_time = header["TFRAME"]
     
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)], 'time_0' : t_0,
-                 'phase': phase, 'TSOVISIT': 'T'}
+                 'phase': phase, 'TSOVISIT': True} # 'TSOVISIT': 'T' RG 28 nov 2021
 
     new_ramp = original_ramp.copy()
     if config_dict["response_drift"]["active"]:
