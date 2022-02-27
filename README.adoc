@@ -171,6 +171,24 @@ active  = true
 |active | bool | Activate poisson noise
 |=======================================================================
 
+=== noise_bis
+Add Poisson noise to the observation.
+It is done with a different algorithm than the precedent, see annex.
+This keyword can be omitted from the ini file.
+
+[source, ini]
+----
+[noise_bis]
+active  = true
+----
+
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|active | bool | Activate poisson noise
+|=======================================================================
+
 == How to use
 In Python, you have 2 solutions. Either run for a single simulation, or a serie of observations.
 
@@ -258,7 +276,64 @@ The author is partly funded by a CNES grant. The research leading to these devel
 The reference articles for the calculations used in the code are the following :   
 - D.Dicken et al. _in prep_
 
-== Annex
+== Annex A
 The directory misc contains routines and scripts for the developpers (sandbox).
 
+== Annex B (programmers only)
+To add an effect, you have to modify the following 6 files :
+[horizontal]
+   README.adoc:: the present document, do not forget to document !
+   version.py:: and no not forget to update the version !
+   effects.py:: here we put the new function
+   main.py:: here we add the lines to call the new function
+   utils.py:: add the name of the new function in write_det_image_with_effects
+   configspec.ini:: add the name of the new function
 
+== Annex C (add noise)
+check mirism_tso.effects.poisson_noise
+
+SOLUTION = REWRITE ALGORITHM, WORKS !
+
+Remark :
+the input ramp has read noise, hook at the beginning ?, non-linearity but no Poisson noise, no cosmic rays .
+
+First step :  check_mirisim_tso_poisson_noise.py
+read the configuration,
+read the mask file name and the det_images_filename  from the configuration,
+read the mask and the original ramp (from det_images_filename)
+call the mirisim_tso.effects.poisson_noise ==> new ramp
+compute the slope of the original ramp (one image, DN/s)
+compute the slope of the new ramp (one image, DN/s)
+show the difference of images
+plot the difference for the slice with maximum flux.
+check_mirisim_tso_poisson_noise does not work.
+
+
+Second Step : compute_noise_alamano.py
+execute the function mirisim_tso.effects.poisson_noise  line by line to find a bug.
+write the intermediate products in fits files
+plot the results : plot_slopes.py
+check_mirisim_tso_poisson_noise does work.
+
+
+Third step : check_mirisim_tso_poisson_noise_with_perfect_ramp.py
+check mirisim_tso.effects.poisson_noise with as input a generated perfect ramp.
+This ramp is computed from a subarray with reference, dead pixel of the illumination model image.
+check_mirisim_tso_poisson_noise does  work.
+
+
+4th step : check_mirisim_tso_poisson_noise_with_perfect_ramp_offset.py
+same than before, but I add to the synthetic ramp an offset image, with random values.
+check_mirisim_tso_poisson_noise does  work.
+
+5th step : compute_noise_correct.py
+try another algorithm :
+
+1) compute the consecutive difference of the ramp ==> cube of images DN/s
+      duplicate the first difference
+2) draw Poisson on the cube of differences
+3) the trick :
+    remove the original to the noisy images to get only the noise !
+4) integrate the noise only,
+5) add the integrated noise only to the original ramp
+This works

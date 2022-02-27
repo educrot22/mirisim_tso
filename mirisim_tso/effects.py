@@ -1,4 +1,5 @@
 # 23 February 2022 R Gastaud add the function add_poisson_noise  version 0.7.62
+# 24 February 2022 R Gastaud correct the  function response_drift for LRS SLITLESS  version 0.7.63
 import numpy as np
 
 from . import constants as c
@@ -103,6 +104,8 @@ def response_drift(original_ramp, t_0, signal, frame=0.159):
     /!\ Warning: Multiple integrations per file are not supported right now. The problem will come
                  from the t array, because for each integration you need to add the duration of
                  all the previous integrations in the file
+    24 February 2022 R Gastaud correct the  function response_drift for LRS SLITLESS  version 0.7.63 :
+       in this case the signal has 4 extra columns
 
     Parameters
     ----------
@@ -129,6 +132,10 @@ def response_drift(original_ramp, t_0, signal, frame=0.159):
     fading_threshold = 5000
 
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
+    (nbs_y, nbs_x) = signal.shape
+    if( nbs_x == (nb_x+4)):
+        LOG.warning('problem of reference pixels,{} remove the 4 first columns from illumination model{}'.format(original_ramp.shape, signal.shape))
+        signal = signal[:,4:]
 
     # Creating two pixels masks corresponding to two different fitting regimes
     faint_pixels = signal < transition_threshold
@@ -159,9 +166,10 @@ def response_drift(original_ramp, t_0, signal, frame=0.159):
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - prefactor1 * np.exp(-t / alpha1) - prefactor2 * np.exp(-t / alpha2)
     ramp_difference = np.float32(ramp_difference)
+    
     LOG.debug("response_drift() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
 
-    return np.float32(ramp_difference)
+    return ramp_difference
 
 
 def anneal_recovery(original_ramp, t_0, frame, config):

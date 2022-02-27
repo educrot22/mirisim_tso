@@ -215,6 +215,10 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
 
     if config["response_drift"]["active"]:
         final_dir += "_drift"
+    
+    if 'response_drift_one' in config:
+        if config["response_drift_one"]["active"]:
+            final_dir += "_drift1"
 
     if config["idle_recovery"]["active"]:
         final_dir += "_idle"
@@ -224,7 +228,12 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
 
     if config["noise"]["active"]:
         final_dir += "_noise"
-
+    
+    if 'noise_bis' in config:
+        if config["noise_bis"]["active"]:
+            final_dir += "_noisebis"
+            #print('config["noise_bis"]["active"]', type(config["noise_bis"]["active"]))
+    
     # If all effects are deactivated, don't write any outputs
     if final_dir == "det_images":
         LOG.warning("All effects are deactivated, not writing any output")

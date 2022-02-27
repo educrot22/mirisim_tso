@@ -3,6 +3,9 @@ Post-treatment of MIRISim simulations for exoplanets time-serie observations
 (Martin-Lagarde | CEA-Saclay | 2019)
 update data['time'] RG 30 April 2021
 update metadata 'TSOVISIT': True instead of 'T' RG 28 nov 2021
+add the function add_poisson_noise, version '0.7.62', 23 February 2022, R Gastaud
+add noise2 in the configuration dictionary, correct the  function response_drift for LRS SLITLESS
+              version '0.7.63', 25 February 2022, R Gastaud
 """
 import sys
 import os
@@ -103,9 +106,21 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
             mask_file = config_dict["CDP"]["mask_file"]
             mode = config_dict["CDP"]["mode"]
             mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
-        metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
+        metadatas['history'].append("MIRISim TSO: Add Poisson Noise old way")
         new_ramp = effects.poisson_noise(new_ramp, mask)
-
+        
+    # Apply poisson noise after all the other effects are applied
+    #import pdb
+    if 'noise_bis' in config_dict:
+        if config_dict["noise_bis"]["active"]:
+            if mask is None:
+                mask_file = config_dict["CDP"]["mask_file"]
+                mode = config_dict["CDP"]["mode"]
+                mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
+            metadatas['history'].append("MIRISim TSO: Add Poisson Noise bis")
+            new_ramp = effects.add_poisson_noise(new_ramp, mask)
+            
+    #pdb.set_trace()
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
     # TODO Add the time-stamp in BJD to the file header.
@@ -181,6 +196,11 @@ def sequential_lightcurve_post_treatment(conf):
 
     # Run each simulation post treatment, one after the other
     nb_simulations = len(simulations)
+    if config_dict["simulations"]["nb_simulations"] is not None:
+        nb_simulations = config_dict["simulations"]["nb_simulations"]
+    LOG.info("sequential_lightcurve_post_treatment() | number of simulation selected={} / total={}".format(nb_simulations, len(simulations)))
+    
+    # Run each simulation post treatment, one after the other
     simu_i = 0
     LOG.info('Calculating...')
     for simulation in simulations:
@@ -188,6 +208,9 @@ def sequential_lightcurve_post_treatment(conf):
         LOG.debug(' ')
         LOG.debug("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
         single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask)
+        if (simu_i == nb_simulations):
+            print('yoho')
+            break
 
     LOG.info('Done !')
     elapsed_time = time.time() - start_time
