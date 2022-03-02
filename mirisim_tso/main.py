@@ -14,7 +14,8 @@ from . import effects
 import logging
 import sys
 import glob
-from astropy.io import ascii
+from astropy.io import ascii # for timedat
+from astropy.io import fits # for background
 import time
 
 from . import version
@@ -24,7 +25,7 @@ from . import version
 LOG = logging.getLogger(__name__)
 
 
-def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None):
+def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None, background=None):
     """
     Apply post treatment to a single simulation folder.
 
@@ -48,6 +49,9 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
         np.array(bool) - Array of bad pixels (True if bad, False if good)
                  Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
                  to be excluded from the computation.
+    
+    background:
+        np.array(float) - Image of the background, e-/s
 
     Returns
     -------
@@ -73,12 +77,21 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     original_ramp, header = utils.read_det_image(det_images_filename)
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
-    frame_time = header["TFRAME"]
+    frame_time = header["TFRAME"] # or TGROUP
+    gain       = header["GAINCF"] # for the background
     
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)], 'time_0' : t_0,
                  'phase': phase, 'TSOVISIT': True} # 'TSOVISIT': 'T' RG 28 nov 2021
 
     new_ramp = original_ramp.copy()
+    
+    # Add background before all the other effects are applied
+    if 'add_background' in config_dict:
+        bck_filename = config_dict["add_background"]["filename"]
+        if background is not None:
+            metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
+            new_ramp = effects.add_background(new_ramp, background, time=frame_time, gain=gain)
+
     if config_dict["response_drift"]["active"]:
         metadatas['history'].append("MIRISim TSO: Add Response drift")
         ramp_difference = effects.response_drift(original_ramp, t_0, signal, frame_time)
@@ -119,7 +132,6 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
                 mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
             metadatas['history'].append("MIRISim TSO: Add Poisson Noise bis")
             new_ramp = effects.add_poisson_noise(new_ramp, mask)
-            
     #pdb.set_trace()
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
@@ -167,6 +179,12 @@ def sequential_lightcurve_post_treatment(conf):
     mask_file = config_dict["CDP"]["mask_file"]
     mode = config_dict["CDP"]["mode"]
     mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
+    #
+    background = None
+    if 'add_background' in config_dict:
+        bck_filename = config_dict["add_background"]["filename"]
+        if bck_filename is not None:
+            background = fits.getdata(bck_filename)  # done March, 1rst 2022 RG
 
     # List simulations
     simulations = glob.glob(os.path.join(input_folder, filtername))
@@ -207,7 +225,7 @@ def sequential_lightcurve_post_treatment(conf):
         simu_i += 1
         LOG.debug(' ')
         LOG.debug("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
-        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask)
+        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask, background=background)
         if (simu_i == nb_simulations):
             print('yoho')
             break

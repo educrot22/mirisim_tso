@@ -189,6 +189,26 @@ active  = true
 |active | bool | Activate poisson noise
 |=======================================================================
 
+
+=== Add Background
+Add background to the observation.
+Background is an image in electron per second of the background flux, in a FITS file.
+The image can be in an extension sci or just a straightforward FITS.
+This keyword can be omitted from the ini file.
+
+[source, ini]
+----
+[add_background]
+filename  = None
+----
+
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|filename | str | Add Background
+|=======================================================================
+
 == How to use
 In Python, you have 2 solutions. Either run for a single simulation, or a serie of observations.
 

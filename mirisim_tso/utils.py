@@ -213,6 +213,10 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
 
     final_dir = "det_images"
 
+    if 'add_background' in config:
+        if config['add_background']["filename"] is not None:
+            final_dir += "_background"
+
     if config["response_drift"]["active"]:
         final_dir += "_drift"
     
@@ -233,7 +237,8 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
         if config["noise_bis"]["active"]:
             final_dir += "_noisebis"
             #print('config["noise_bis"]["active"]', type(config["noise_bis"]["active"]))
-    
+
+ 
     # If all effects are deactivated, don't write any outputs
     if final_dir == "det_images":
         LOG.warning("All effects are deactivated, not writing any output")

@@ -1,5 +1,6 @@
 # 23 February 2022 R Gastaud add the function add_poisson_noise  version 0.7.62
 # 24 February 2022 R Gastaud correct the  function response_drift for LRS SLITLESS  version 0.7.63
+# 28 February 2022 R Gastaud correc add the function add background version 0.7.64
 import numpy as np
 
 from . import constants as c
@@ -391,3 +392,35 @@ def add_poisson_noise(original_ramp, mask):
 
     LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(noised_ramp.shape, noised_ramp.dtype))
     return noised_ramp
+
+############
+def add_background(original_ramp, background, time=0.159, gain=5.5):
+    """
+    Add background on all integration of a det_image data cube.
+    BEWARE works only for one integration
+
+    Parameters
+    ----------
+    original_ramp:
+                 Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
+    background:
+        np.array(float) - image of the background, electron/second
+
+    Returns
+    -------
+    data cube with background added (this is not a ramp difference, this is the full ramp)
+
+    """
+    # get the shape and check that the cube is 4D
+    (nb_integrations, nb_frames, nb_y, nb_x) =  original_ramp.shape
+    if (nb_integrations != 1): return
+    # create the hypercube of differences in electron
+    #
+    imagette = background*time/gain
+    cube0 = np.tile(imagette, nb_frames).reshape([nb_y,nb_frames,nb_x])
+    cube1 = cube0.swapaxes(1,0)
+    cube1 = np.cumsum(cube1, axis=0)
+    new_ramp = original_ramp + cube1.reshape([1,nb_frames, nb_y, nb_x])
+    LOG.debug("add_background() |  new ramp shape={:}, dtype={:} ".format(new_ramp.shape, new_ramp.dtype))
+    return new_ramp
+
