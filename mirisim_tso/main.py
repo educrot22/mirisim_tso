@@ -6,6 +6,7 @@ update metadata 'TSOVISIT': True instead of 'T' RG 28 nov 2021
 add the function add_poisson_noise, version '0.7.62', 23 February 2022, R Gastaud
 add noise2 in the configuration dictionary, correct the  function response_drift for LRS SLITLESS
               version '0.7.63', 25 February 2022, R Gastaud
+add obs_time version 0.7.65, 04 March 2022 R Gastaud
 """
 import sys
 import os
@@ -25,7 +26,7 @@ from . import version
 LOG = logging.getLogger(__name__)
 
 
-def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None, background=None):
+def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None, background=None, obs_time=None):
     """
     Apply post treatment to a single simulation folder.
 
@@ -86,11 +87,10 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     new_ramp = original_ramp.copy()
     
     # Add background before all the other effects are applied
-    if 'add_background' in config_dict:
-        bck_filename = config_dict["add_background"]["filename"]
-        if background is not None:
-            metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
-            new_ramp = effects.add_background(new_ramp, background, time=frame_time, gain=gain)
+    bck_filename = config_dict["background"]["filename"]
+    if bck_filename is not None:
+        metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
+        new_ramp = effects.add_background(new_ramp, background, time=frame_time, gain=gain)
 
     if config_dict["response_drift"]["active"]:
         metadatas['history'].append("MIRISim TSO: Add Response drift")
@@ -142,7 +142,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     
     # Write fits file
     utils.write_det_image_with_effects(det_images_filename, output_filename,  new_data=new_ramp, extra_metadata=metadatas, config=config_dict,
-                                       overwrite=config_dict["simulations"]["overwrite"])
+                                       overwrite=config_dict["simulations"]["overwrite"], obs_time=obs_time)
 
 
 def sequential_lightcurve_post_treatment(conf):
@@ -181,10 +181,14 @@ def sequential_lightcurve_post_treatment(conf):
     mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
     #
     background = None
-    if 'add_background' in config_dict:
-        bck_filename = config_dict["add_background"]["filename"]
-        if bck_filename is not None:
-            background = fits.getdata(bck_filename)  # done March, 1rst 2022 RG
+    bck_filename = config_dict["background"]["filename"]
+    if bck_filename is not None:
+        background = fits.getdata(bck_filename)  # done March, 1rst 2022 RG
+    #
+    obs_time_flag = False   # done March, 1rst 2022 RG
+    period = config_dict["orbit"]["period"]
+    epoch  = config_dict["orbit"]["epoch"]
+    if (period*epoch > 0): obs_time_flag = True
 
     # List simulations
     simulations = glob.glob(os.path.join(input_folder, filtername))
@@ -208,9 +212,12 @@ def sequential_lightcurve_post_treatment(conf):
     
     simulation_start_time = {}
     simulation_orbital_phase = {}
+    simulation_obs_time = {}
     for sim in simulations:
         simulation_start_time[sim] = t_start[simulation_index[sim]]
         simulation_orbital_phase[sim] = orbital_phase[simulation_index[sim]]
+        simulation_obs_time[sim] = None
+        if(obs_time_flag): simulation_obs_time[sim] = orbital_phase[simulation_index[sim]]*period + epoch
 
     # Run each simulation post treatment, one after the other
     nb_simulations = len(simulations)
@@ -225,7 +232,7 @@ def sequential_lightcurve_post_treatment(conf):
         simu_i += 1
         LOG.debug(' ')
         LOG.debug("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
-        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask, background=background)
+        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask, background=background, obs_time=simulation_obs_time[simulation])
         if (simu_i == nb_simulations):
             print('yoho')
             break

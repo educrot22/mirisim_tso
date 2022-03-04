@@ -1,5 +1,6 @@
 import os
 from astropy.io import fits
+from astropy.time import Time
 import numpy as np
 import sys
 
@@ -12,6 +13,7 @@ import configobj
 
 from . import constants as c
 
+##  RG 04 March 2022  DATE-OBS, TIME-OBS  in write_det_image
 ##  RG  15 nov 2021  change read_illum_model
 ##  RG DA 16 nov 2021 change read_mask and read_det_image
 
@@ -182,7 +184,7 @@ def update_dict(d, u):
     return d
 
 
-def write_det_image_with_effects(original_path, new_path, new_data, extra_metadata, config, overwrite=True):
+def write_det_image_with_effects(original_path, new_path, new_data, extra_metadata, config, obs_time=None, overwrite=True):
     """
     Based on the original .fits file, will overwrite the data cube with the one given
     in parameter.
@@ -200,6 +202,8 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
         new data cube (nb_integrations, nb_groups, nb_y, nb_x)
     extra_metadata: dict
         New metadata you want to add in the future .fits file (as opposed to the original one)
+    obs_time : float
+       julian date
     overwrite: bool
         [optional] By defaut, True. Do you want to overwrite the post_processed .fits file if it already exists?
 
@@ -253,6 +257,13 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
     hdulist[1].data = new_data
 
     metadata = hdulist[0].header
+    if(obs_time is not None):
+        my_obs_time = Time(obs_time, format='jd')
+        date_obs = my_obs_time.to_value('iso', 'date')
+        time_obs = my_obs_time.to_value('iso', 'date_hms')[11:-4]
+        metadata['DATE-OBS'] = date_obs, '[yyyy-mm-dd] UTC date at start of exposure'
+        metadata['TIME-OBS'] = time_obs, '[hh:mm:ss.sss] UTC time at start of exposure '
+
 
     # Treat history separately
     if "history" in extra_metadata:
