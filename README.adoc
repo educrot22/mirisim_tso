@@ -190,7 +190,7 @@ active  = true
 |=======================================================================
 
 
-=== Add Background
+=== background
 Add background to the observation.
 Background is an image in electron per second of the background flux, in a FITS file.
 The image can be in an extension sci or just a straightforward FITS.
@@ -198,7 +198,7 @@ This keyword can be omitted from the ini file.
 
 [source, ini]
 ----
-[add_background]
+[background]
 filename  = None
 ----
 
@@ -208,6 +208,27 @@ filename  = None
 |Parameter |Type / Unit | Description
 |filename | str | Add Background
 |=======================================================================
+
+
+=== orbit
+Add obs-date and obs-time to the observation.
+For this we give the epoch in Julian Day of the transit, and the period of the exoplanet in day.
+
+[source, ini]
+----
+[orbit]
+epoch  = 0.
+period = 0.
+----
+
+
+[cols="<,<,<",options="header",]
+|=======================================================================
+|Parameter |Type / Unit | Description
+|epoch | float/Julian Day | ephemeris of the transit
+|period | float/day | period of the exo-planet
+|=======================================================================
+
 
 == How to use
 In Python, you have 2 solutions. Either run for a single simulation, or a serie of observations.
@@ -357,3 +378,9 @@ try another algorithm :
 4) integrate the noise only,
 5) add the integrated noise only to the original ramp
 This works
+
+
+== Annex D (merge files)
+The output of MAST will be files of 2 GigaBytes.
+The program merge_sim_files.py in the directory misc regroup the small input files in big files, keeping the headers.
+
