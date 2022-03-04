@@ -421,6 +421,7 @@ def add_background(original_ramp, background, time=0.159, gain=5.5):
     cube1 = cube0.swapaxes(1,0)
     cube1 = np.cumsum(cube1, axis=0)
     new_ramp = original_ramp + cube1.reshape([1,nb_frames, nb_y, nb_x])
+    new_ramp = np.float32(new_ramp)
     LOG.debug("add_background() |  new ramp shape={:}, dtype={:} ".format(new_ramp.shape, new_ramp.dtype))
     return new_ramp
 

@@ -16,11 +16,10 @@ import numpy as np
 from astropy.io import fits
 import math
 
-# I don't have a real value for now, because using the file limit from MIRAGE
-# (38. * 2048. * 2048 ; mirage.utils.constants.FILE_SPLITING_LIMIT) give files way too small.
-# But Nircam has 10 detectors, so I multiplied by 10 instead
-FILE_SPLITTING_LIMIT = 2*45083520 +10
-#FILE_SPLITTING_LIMIT =  2000*1E6 # 2 Giga Bytes
+# I don't use mirage.utils.constants.FILE_SPLITING_LIMIT) which gives files way too small.
+# this is for Nircam which has 10 detectors
+#FILE_SPLITTING_LIMIT = 2*45083520 +10
+FILE_SPLITTING_LIMIT =  2000*1E6 # 2 Giga Bytes
 
 def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False):
     """
