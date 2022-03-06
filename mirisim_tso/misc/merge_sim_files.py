@@ -90,7 +90,7 @@ def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False
             hdri["INTSTART"] = (i_small_file-nint+1, "The starting integration number of the data in this segment, zero-counting")
             hdri["INTEND"] = (i_small_file+1, "The ending integration number of the data in this segment")
             hdri["EXSEGNUM"] = (i_big_file, "The segment number of the current product")
-            hdri["NINTS"] = i # nint
+            hdri["NINTS"] = nint # nint
             #output_filename = "miri_big_cube_"+str(i_big_file)+".fits"
             output_filename = "miri_big_cube_{:03d}.fits".format(i_big_file)
             output_filename = os.path.join(output_dir, output_filename)
