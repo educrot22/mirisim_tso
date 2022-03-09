@@ -211,8 +211,8 @@ filename  = None
 
 
 === orbit
-Add obs-date and obs-time to the observation.
-For this we give the epoch in Julian Day of the transit, and the period of the exoplanet in day.
+Add obs-date, obs-time and obs-mjd to the observation.
+For this we give the epoch (ephemeris) in Julian Day of the transit, and the period of the exoplanet in day.
 
 [source, ini]
 ----

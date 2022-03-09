@@ -263,7 +263,7 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
         time_obs = my_obs_time.to_value('iso', 'date_hms')[11:-4]
         metadata['DATE-OBS'] = date_obs, '[yyyy-mm-dd] UTC date at start of exposure'
         metadata['TIME-OBS'] = time_obs, '[hh:mm:ss.sss] UTC time at start of exposure '
-
+        metadata['MJD-OBS']  = my_obs_time.mjd, 'Modified Julian Day, start of exposure'
 
     # Treat history separately
     if "history" in extra_metadata:
