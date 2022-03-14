@@ -1,0 +1,20 @@
+Plan B
+Create the calibrated spectral images and calibrated spectra, without creating the ramps. 
+Use the mirisim official for only illumination models.
+
+
+script_create_illum_models.py
+	create the set of illumination files by calling mirisim
+	e.g. 1849 files, total 484.7 MB, 18 minutes
+	
+script_process_illum_models.py
+	process the set of illumination files (spectral images DN/s) 
+	e.g. 1 file, 64 bits, 443 MB quick < 5 minute
+
+script_fill_rateints.py
+	fill the rateints files (spectral images DN/s)
+	e.g. 44 files, total 1.11 GB, very quick < 1 minute,  	
+
+script_launch_Spec2Pipeline.py
+	calibrate the spectral images (caling files, Jy) and the spectra (x1dints files Jy)
+	e.g. 2*42 files, total 1.47 GB, 35 minutes
