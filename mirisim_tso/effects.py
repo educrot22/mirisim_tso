@@ -387,6 +387,8 @@ def add_poisson_noise(original_ramp, mask):
     noised_ramp = ramp_only_noise + original_ramp
     # This works only for the good pixels (which accumulate signal). We use the bad pixels CDP from MIRISim
     # Overwrite bad pixels with the original value.
+    #import pdb
+    #pdb.set_trace()
     bad_pixels = np.broadcast_to(mask, original_ramp.shape)
     noised_ramp[bad_pixels] = original_ramp[bad_pixels]
 
