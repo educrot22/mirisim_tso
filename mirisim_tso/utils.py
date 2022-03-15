@@ -13,6 +13,7 @@ import configobj
 
 from . import constants as c
 
+##  RG 15 March 2022  add BJD-OBS  in write_det_image
 ##  RG 04 March 2022  DATE-OBS, TIME-OBS  in write_det_image
 ##  RG  15 nov 2021  change read_illum_model
 ##  RG DA 16 nov 2021 change read_mask and read_det_image
@@ -203,7 +204,7 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
     extra_metadata: dict
         New metadata you want to add in the future .fits file (as opposed to the original one)
     obs_time : float
-       julian date
+       barycenter julian date of the start of the exposure
     overwrite: bool
         [optional] By defaut, True. Do you want to overwrite the post_processed .fits file if it already exists?
 
@@ -261,9 +262,10 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
         my_obs_time = Time(obs_time, format='jd')
         date_obs = my_obs_time.to_value('iso', 'date')
         time_obs = my_obs_time.to_value('iso', 'date_hms')[11:-4]
-        metadata['DATE-OBS'] = date_obs, '[yyyy-mm-dd] UTC date at start of exposure'
-        metadata['TIME-OBS'] = time_obs, '[hh:mm:ss.sss] UTC time at start of exposure '
-        metadata['MJD-OBS']  = my_obs_time.mjd, 'Modified Julian Day, start of exposure'
+        metadata['DATE-OBS'] = date_obs, '[yyyy-mm-dd] UTC date at start of exposure, barycenter'
+        metadata['TIME-OBS'] = time_obs, '[hh:mm:ss.sss] UTC time at start of exposure, barycenter '
+        metadata['MJD-OBS']  = my_obs_time.mjd, 'Modified Julian Day, start of exposure, barycenter'
+        metadata['BJD-OBS']  = obs_time, 'Barycenter Julian Day, start of exposure'
 
     # Treat history separately
     if "history" in extra_metadata:
