@@ -203,8 +203,10 @@ def sequential_lightcurve_post_treatment(conf):
         simulation_index[sim] = idx
 
     # Create time array
-    timedat = os.path.join(input_folder, "times.dat")
-    data = ascii.read(timedat)
+    time_filename = config_dict["simulations"]["time_filename"]
+    if time_filename is None:
+        time_filename = os.path.join(input_folder, "times.dat")
+    data = ascii.read(time_filename)
     t_start = data["time"].data
     # t_start = data["t_start"].data obsolete since version 1.0.0
     orbital_phase = data["phase"]

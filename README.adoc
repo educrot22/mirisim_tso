@@ -80,8 +80,9 @@ The program shall process the folders (dir, filtername), in our example
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Parameter |Type / Unit | Description
-|dir | str | Folder name. All folders found in this folder and whose name begins with filtername will be assumed to be MIRISim simulations
+|input_dir | str | Folder name. All folders found in this folder and whose name begins with filtername will be assumed to be MIRISim simulations
 |filtername | str | filter the folders in dir
+|time_filename | str | name of the file containing index, phase and time for each integration, default is input_dir+times.dat
 |overwrite | bool | Existing level 1B files are *NOT* overwriting, even with `overwrite=True`.
 However, for each combination of effect, a specific file is created.
 This file will be overwritten if this parameter is *True*
