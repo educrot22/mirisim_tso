@@ -39,7 +39,7 @@ file_B = 'compagnon/illum_models/illum_model_seq1_MIRIMAGE_P750L.fits'
 background = 110*u.electron/u.second
 pipe_dir='/Volumes/KINGSTON/ERS_NGTS10_2022_bis/mirisim/'
 tint = 47.7*u.second
-ron = 5*u.adu*np.sqrt(300)/tint
+ron = 5*u.adu*np.sqrt(300)/tint ## DN/s
 pattern='illum_model_*.fits'
 output_filename = 'result.fits'
 PLOT = True
@@ -73,7 +73,8 @@ if (PLOT):plot_cube(noised_cube, 'Poisson Noise')
 ## add Read Out Noise
 ron_noise = np.random.normal(0,1, size=cube.shape)*ron
 print('ron_noise', ron_noise.shape, ron_noise.min(), ron_noise.max())
-noised2_cube = noised_cube + ron_noise*gain
+noised2_cube = noised_cube + ron_noise*gain  ## electron/second
+
 if (PLOT):plot_cube(ron_noise, 'RON')
 
 write_illum_model(output_filename, noised2_cube, wavelength, overwrite=False)
