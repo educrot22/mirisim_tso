@@ -251,6 +251,11 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
     idle_time = config["idle_recovery"]["duration"]
     (nb_integrations, nb_frames, nb_y, nb_x) = original_ramp.shape
 
+    (nbs_y, nbs_x) = signal.shape
+    if( nbs_x == (nb_x+4)):
+        #LOG.warning('problem of reference pixels,{} remove the 4 first columns from illumination model{}'.format(original_ramp.shape, signal.shape))
+        signal = signal[:,4:]
+
     alpha1 = 2975790.21677 * np.exp(-0.0173557837941 * signal) + 1133.82032361
     amp1 = ((2.04271769088e-05 * signal**2 + -0.0166816654355 * signal + 4.08114118945)/2011.9) * idle_time
 
@@ -261,6 +266,8 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
 
     # We integrate from t_0, need to remove evolution between t_0 and t_i (ramp_difference_t_0)
     ramp_difference = ramp_difference_t_0 - (amp1 * alpha1) * np.exp(-t / alpha1)
+
+    ramp_difference = ramp_difference.reshape([1, nb_frames, nb_y, nb_x]) # RG convention hypercube
     ramp_difference = np.float32(ramp_difference)
     LOG.debug("idle_recovery() | ramp shape={:}, dtype={:} ".format(ramp_difference.shape, ramp_difference.dtype))
     return ramp_difference
