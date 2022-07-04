@@ -2,6 +2,7 @@
 # and compute the slope with simple algorithm
 ##  from outils_bis
 ##   July, 2nd 2022    René Gastaud, CEA-Saclay
+###  July, 4th  defensive coding in print key
 ##  BEWARE RETURN IN DN/S
 
 from astropy.io import fits
@@ -29,10 +30,14 @@ def read_uncal_dir(input_dir, pattern='*_uncal.fits', verbose=False, out_file=No
     tframe= header0['TFRAME']
     ngroups =  header0['ngroups']
     tint2 = tframe*(ngroups-2)
-    keys=['TARGPROP', 'TARGNAME', 'NINTS', 'INTSTART', 'INTEND', 'NGROUPS', 'TFRAME', 'TGROUP', 'EFFINTTM', 'DURATION']
-    for key in keys:print(key, header0[key])
+    keys=['TARGPROP', 'TARGNAME', 'NINTS', 'INTSTART', 'INTEND', 'NGROUPS', 'TFRAME', 'TGROUP', 'EFFINTTM', 'DURATION', 'TINT']
     cube = np.zeros([nints, ny, nx])
     if(verbose):
+        for key in keys:
+            if key in header0:
+                print(key, header0[key])
+            else:
+                print(key, 'not found')
         print(nints, ny, nx)
         print('cube.shape', cube.shape, 'sci.shape', sci.shape)
     cube[:]=np.nan
