@@ -24,7 +24,10 @@ import math
 #FILE_SPLITTING_LIMIT = 200E6 # 90167050 # 45083520*2+10  for testing
 FILE_SPLITTING_LIMIT =  2000*1E6 # 2 Giga Bytes
 
-ma_version='deuxieme'
+version='v2.1'
+
+input_dir = os.path.abspath(sys.argv[1])
+output_dir =  os.path.abspath(sys.argv[1])
 
 def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False, overwrite=False):
     """
@@ -148,8 +151,6 @@ def write_detector_model(filename, hdr0,  cube, hdr_sci, pixel_dq, hdr_pixel_dq,
     hdul.writeto(filename, overwrite=overwrite)
     return
 
-##merge_files(XX, XX, pattern='simulation*.fits', verbose=False)
-
 
 def fill_header( hdri,  nb_segments, nb_input_files, i_start, i_end, i_big_file):
     """
@@ -177,4 +178,5 @@ def fill_header( hdri,  nb_segments, nb_input_files, i_start, i_end, i_big_file)
     output_filename = "miri_big_cube_{:03d}.fits".format(i_big_file)
     return output_filename
 
+merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False)
 
