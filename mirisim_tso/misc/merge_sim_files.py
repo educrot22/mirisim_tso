@@ -7,6 +7,7 @@ source: https://jwst-pipeline.readthedocs.io/en/latest/jwst/data_products/file_n
 Authors: Christophe Cossou, christophe.coussou@cea.fr, Rene Gastaud
 
 History :
+20 July RG intstart, intend, nints corrected, and add overwrite option
 4 March 2022 correct header do not use the first header for all the output files !
 16 March 2022 starts counting from zero for the output files
 create hdri
@@ -20,10 +21,12 @@ import math
 # I don't use mirage.utils.constants.FILE_SPLITING_LIMIT) which gives files way too small.
 # this is for Nircam which has 10 detectors
 
-FILE_SPLITTING_LIMIT = 90167050 # 45083520*2+10  for testing
-#FILE_SPLITTING_LIMIT =  2000*1E6 # 2 Giga Bytes
+#FILE_SPLITTING_LIMIT = 200E6 # 90167050 # 45083520*2+10  for testing
+FILE_SPLITTING_LIMIT =  2000*1E6 # 2 Giga Bytes
 
-def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False):
+ma_version='deuxieme'
+
+def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False, overwrite=False):
     """
     We assume that all files have the same characteristics (in particular same number of integrations, one integration)
 
@@ -90,28 +93,28 @@ def merge_files(input_dir, output_dir, pattern='simulation*.fits', verbose=False
         if (i == nint):
             i=0
             if(verbose):print('write cube', i_big_file)
-            if ((i_big_file == (nb_segments-2) and one_flag):
+            if ((i_big_file == (nb_segments-2)) and one_flag):
                 print('special processing add an extra integration')
             i_start = i_small_file - nint + 1
-            i_end   = i_small_file + 1
+            i_end   = i_small_file # + 1  RG 11 jul 2022
             output_filename = fill_header( hdri,  nb_segments, nb_input_files, i_start, i_end, i_big_file)
             output_filename = os.path.join(output_dir, output_filename)
-            write_detector_model(output_filename, hdri,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf )
+            write_detector_model(output_filename, hdri,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf, overwrite=overwrite )
             i_big_file = i_big_file+1
     if(i>0):
         if(verbose):print('write last big file', i_big_file, i)
         i_start = i_small_file - i + 1
-        i_end   = i_small_file + 1
+        i_end   = i_small_file # + 1  RG 11 jul 2022
         output_filename = fill_header( hdri,  nb_segments, nb_input_files, i_start, i_end, i_big_file)
         output_filename = os.path.join(output_dir, output_filename)
         cube = cube[0:i, :, :, :]
         cube_ref = cube_ref[0:i, :, :, :]
-        write_detector_model(output_filename, hdri,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf )
+        write_detector_model(output_filename, hdri,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf, overwrite=overwrite )
 
         
 
   
-def write_detector_model(filename, hdr0,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf ):
+def write_detector_model(filename, hdr0,  cube, hdr_sci, pixel_dq, hdr_pixel_dq, cube_ref, hdr_refout, asdf, hdr_asdf, overwrite ):
     '''
     Write a cube of data, cube of error, cube of flags
     :param filename: str, name of the output file
@@ -142,7 +145,7 @@ def write_detector_model(filename, hdr0,  cube, hdr_sci, pixel_dq, hdr_pixel_dq,
     
     hdul = fits.HDUList([primary_hdu, image_hdu1, image_hdu2, image_hdu3, image_hdu4])
     #hdul = fits.HDUList([primary_hdu])
-    hdul.writeto(filename)
+    hdul.writeto(filename, overwrite=overwrite)
     return
 
 ##merge_files(XX, XX, pattern='simulation*.fits', verbose=False)
@@ -170,7 +173,7 @@ def fill_header( hdri,  nb_segments, nb_input_files, i_start, i_end, i_big_file)
     hdri["INTSTART"] = (i_start, "The starting integration number of the data in this segment, zero-counting")
     hdri["INTEND"]   = (i_end, "The ending integration number of the data in this segment")
     hdri["EXSEGNUM"] = (i_big_file, "The segment number of the current product")
-    hdri["NINTS"] = i_end - i_start
+    hdri["NINTS"] = nb_input_files # i_end - i_start
     output_filename = "miri_big_cube_{:03d}.fits".format(i_big_file)
     return output_filename
 
