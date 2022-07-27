@@ -17,6 +17,7 @@ import os
 import numpy as np
 from astropy.io import fits
 import math
+import sys
 
 # I don't use mirage.utils.constants.FILE_SPLITING_LIMIT) which gives files way too small.
 # this is for Nircam which has 10 detectors
