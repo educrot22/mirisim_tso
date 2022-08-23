@@ -1,4 +1,4 @@
-__version__ = "0.7.68"
+__version__ = "0.8.0"
 # 16 March 2022 R Gastaud add time_filename
 # 15 March 2022 R Gastaud add Barycenter Julian Day  0.7.67
 # 09 March 2022 R Gastaud add Modified Julian Day  __version__ = "0.7.66

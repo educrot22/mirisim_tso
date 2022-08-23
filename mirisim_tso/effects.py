@@ -3,7 +3,6 @@
 # 28 February 2022 R Gastaud correc add the function add background version 0.7.64
 import numpy as np
 
-from . import constants as c
 # from mirisim_tso import constants as c  RG
 
 import logging
@@ -273,7 +272,7 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
     return ramp_difference
 
 
-def poisson_noise(original_ramp, mask):
+def poisson_noise(original_ramp, mask, gain):
     """
     Compute Poisson noise on all integration of a det_image data cube.
     We follow the technical note of Massimo Roberto WFC3-2007-12.pdf, paragraph 2.4, equation 1.40
@@ -289,6 +288,9 @@ def poisson_noise(original_ramp, mask):
         np.array(bool) - Array of bad pixels (True if bad, False if good)
                  Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
                  to be excluded from the computation.
+
+    gain:
+        float - Gain in electron/DN
 
     Returns
     -------
@@ -322,7 +324,7 @@ def poisson_noise(original_ramp, mask):
         LOG.debug("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
         
     # add the noise, comput in electron, only for good pixels
-    frame_noise[good_pixels] = np.float32(np.random.poisson(good_frame_differences*c.gain)/c.gain)
+    frame_noise[good_pixels] = np.float32(np.random.poisson(good_frame_differences*gain)/gain)
     
     # add the first image of the ramp
     frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])
@@ -338,7 +340,7 @@ def poisson_noise(original_ramp, mask):
     LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(noised_ramp.shape, noised_ramp.dtype))
     return noised_ramp
 
-def add_poisson_noise(original_ramp, mask):
+def add_poisson_noise(original_ramp, mask, gain):
     """
     Add Poisson noise on all integration of a det_image data cube.
     The previous function, poisson_noise(), computes the Poisson noise but has a problem
@@ -356,6 +358,9 @@ def add_poisson_noise(original_ramp, mask):
         np.array(bool) - Array of bad pixels (True if bad, False if good)
                  Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
                  to be excluded from the computation.
+
+    gain:
+        float - Gain in electron/DN
 
     Returns
     -------
@@ -384,7 +389,7 @@ def add_poisson_noise(original_ramp, mask):
         LOG.debug("poisson_noise() |  minimum frame_differences={:}, nb_negatif={:} ".format(np.min(frame_differences), nb_negatif ))
         
     # add the noise, comput in electron
-    frame_noise = np.float32(np.random.poisson(frame_differences*c.gain)/c.gain)
+    frame_noise = np.float32(np.random.poisson(frame_differences*gain)/gain)
 
     # remove the original signal
     frame_only_noise = frame_noise - frame_differences
@@ -414,6 +419,9 @@ def add_background(original_ramp, background, time=0.159, gain=5.5):
                  Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
     background:
         np.array(float) - image of the background, electron/second
+
+    gain:
+        float - Gain in electron/DN
 
     Returns
     -------

@@ -74,17 +74,18 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     illum_models_filename = glob.glob(os.path.join(simulation_folder, "illum_models", "illum_model_*.fits"))[0]
     #"illum_model_1_MIRIMAGE_P750L.fits")
 
-    signal = utils.read_illum_model(illum_models_filename)
     original_ramp, header = utils.read_det_image(det_images_filename)
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
-    frame_time = header["TFRAME"] # or TGROUP
-    gain       = header["GAINCF"] # for the background
+    frame_time = header["TFRAME"]  # or TGROUP
+    gain       = header["GAINCF"]  # for the background
     
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)], 'time_0' : t_0,
                  'phase': phase, 'TSOVISIT': True} # 'TSOVISIT': 'T' RG 28 nov 2021
 
     new_ramp = original_ramp.copy()
+
+    signal = utils.read_illum_model(illum_models_filename, gain)
     
     # Add background before all the other effects are applied
     bck_filename = config_dict["background"]["filename"]
@@ -120,7 +121,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
             mode = config_dict["CDP"]["mode"]
             mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
         metadatas['history'].append("MIRISim TSO: Add Poisson Noise old way")
-        new_ramp = effects.poisson_noise(new_ramp, mask)
+        new_ramp = effects.poisson_noise(new_ramp, mask, gain)
         
     # Apply poisson noise after all the other effects are applied
     #import pdb
@@ -131,7 +132,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
                 mode = config_dict["CDP"]["mode"]
                 mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
             metadatas['history'].append("MIRISim TSO: Add Poisson Noise bis")
-            new_ramp = effects.add_poisson_noise(new_ramp, mask)
+            new_ramp = effects.add_poisson_noise(new_ramp, mask, gain)
     #pdb.set_trace()
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 

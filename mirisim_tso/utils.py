@@ -11,7 +11,6 @@ import validate
 import pkg_resources
 import configobj
 
-from . import constants as c
 
 ##  RG 15 March 2022  add BJD-OBS  in write_det_image
 ##  RG 04 March 2022  DATE-OBS, TIME-OBS  in write_det_image
@@ -46,7 +45,7 @@ def read_det_image(filename):
         raise
 
 
-def read_illum_model(illum_model_filename):
+def read_illum_model(illum_model_filename, gain):
     """
     . Function to read the variable if it comes from a FITS file. Only takes |.fits containing illumination model
     from MIRISim
@@ -55,6 +54,9 @@ def read_illum_model(illum_model_filename):
 
     >>>> PARAMETERS
     • illum_model_filename     : String - Name of the entry illum_model_filename containing the illum model to read
+
+    gain:
+        float - Gain in electron/DN
 
     >>>> RETURNS
     • slope_array   : np.array - values in DN/s of the illumination
@@ -71,7 +73,7 @@ def read_illum_model(illum_model_filename):
         # Add reference pixel to illum models to match size of det_images
         (ny, nx) = illumination.shape
         slope_array = np.zeros((ny, nx+4))
-        slope_array[:, 4:] = illumination/c.gain
+        slope_array[:, 4:] = illumination / gain
 
         return slope_array
 
