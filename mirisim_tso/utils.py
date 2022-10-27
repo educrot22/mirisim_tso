@@ -11,6 +11,8 @@ import validate
 import pkg_resources
 import configobj
 
+import matplotlib.pyplot as plt
+
 
 ##  RG 15 March 2022  add BJD-OBS  in write_det_image
 ##  RG 04 March 2022  DATE-OBS, TIME-OBS  in write_det_image
@@ -72,8 +74,12 @@ def read_illum_model(illum_model_filename, gain):
 
         # Add reference pixel to illum models to match size of det_images
         (ny, nx) = illumination.shape
+        print(illumination.shape)
+        print(gain.shape)
+
         slope_array = np.zeros((ny, nx+4))
         slope_array[:, 4:] = illumination / gain
+        print(slope_array.shape)
 
         return slope_array
 
@@ -240,9 +246,6 @@ def write_det_image_with_effects(original_path, new_path, new_data, extra_metada
     if config["noise"]["active"]:
         final_dir += "_noise"
     
-    if 'noise_bis' in config:
-        if config["noise_bis"]["active"]:
-            final_dir += "_noisebis"
             #print('config["noise_bis"]["active"]', type(config["noise_bis"]["active"]))
 
  
@@ -398,3 +401,27 @@ def read_mask(filename, mode="LRS"):
     
 
     return mask
+
+def read_gain(filename, mode="LRS"):
+    """
+    Read MIRI CDP GAIN and return gain cropped for a SLITLESS observation (mode = LRS)
+
+    :param str filename: path to CDP file
+    :param str mode: if LRS crop the full mask (default)
+    :return: cropped gain 
+    :rtype: ndarray()
+    """
+
+    with fits.open(filename) as hdulist:
+        gain = hdulist[1].data
+        hdulist.close()
+
+    if (mode == 'LRS'):
+        x1 = 0
+        x2 = 72
+        y1 = 528 
+        y2 = 528+416 
+        gain = gain[y1:y2, x1:x2]
+    
+    return gain 
+

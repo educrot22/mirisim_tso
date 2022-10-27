@@ -272,74 +272,6 @@ def idle_recovery(original_ramp, t_0, signal, frame, config):
     return ramp_difference
 
 
-def poisson_noise(original_ramp, mask, gain):
-    """
-    Compute Poisson noise on all integration of a det_image data cube.
-    We follow the technical note of Massimo Roberto WFC3-2007-12.pdf, paragraph 2.4, equation 1.40
-    y_i = y_i-1 + p_i
-    where the various p_i are statistically independent packets of electrons.
-    So the Poisson distribution is applied to p_i, not y_i
-    http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/SUR_vs_CDS.pdf
-    Parameters
-    ----------
-    original_ramp:
-                 Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
-    mask:
-        np.array(bool) - Array of bad pixels (True if bad, False if good)
-                 Needed because the bad pixels have non-additive shapes where computation is not applicable. They need
-                 to be excluded from the computation.
-
-    gain:
-        float - Gain in electron/DN
-
-    Returns
-    -------
-    data cube with Poisson noise added (this is not a ramp difference, this is the full ramp)
-
-    """
-    # get the shape and check that the cube is 4D
-    (nb_integrations, nb_frames, nb_y, nb_x) =  original_ramp.shape
-    # create the hypercube of differences in electron
-    #  I duplicate the  first image of difference
-    frame_differences = np.diff(original_ramp, axis=1)
-    # diff = original_ramp[:,1:,:,:] - original_ramp[:,0:-1,:,:] equivalent
-    first_difference = frame_differences[0,0,:,:]
-    first_difference = first_difference.reshape([1, 1, nb_y, nb_x])
-    frame_differences = np.append(first_difference, frame_differences, axis=1)
-    # now frame_differences has the same shape than original_ramp
-
-    #
-    ## beware, we have some negative pixels because of the RON applied before
-    good_pixels = np.broadcast_to(np.invert(mask), original_ramp.shape)
-    frame_noise = np.zeros([nb_integrations, nb_frames, nb_y, nb_x], dtype=np.float32)
-    # I create the variable good_frame_differences because I was not able to
-    #  frame_differences[good_pixels][ii] = 0  does not work !
-    good_frame_differences = frame_differences[good_pixels]
-    ii = np.where(good_frame_differences < 0)
-    good_frame_differences[ii] = 0
-    nb_negatif = len(ii[0])
-    if (np.min(frame_differences[good_pixels]) < 0):
-        pass
-        LOG.debug(f"poisson_noise minimum {np.min(frame_differences[good_pixels])} {nb_negatif}")
-        LOG.debug("poisson_noise() |  minimum frame_differences[good_pixels]={:}, nb_negatif={:} ".format(np.min(frame_differences[good_pixels]), nb_negatif ))
-        
-    # add the noise, comput in electron, only for good pixels
-    frame_noise[good_pixels] = np.float32(np.random.poisson(good_frame_differences*gain)/gain)
-    
-    # add the first image of the ramp
-    frame_noise[0,0,:,:] += (original_ramp[0,0,:,:] - first_difference[0,0,:,:])
-
-    # cumulative sum
-    noised_ramp = np.cumsum(frame_noise, axis=1)
-
-    # This works only for the good pixels (which accumulate signal). We use the bad pixels CDP from MIRISim
-    # Overwrite bad pixels with the original value.
-    bad_pixels = np.broadcast_to(mask, original_ramp.shape)
-    noised_ramp[bad_pixels] = original_ramp[bad_pixels]
-
-    LOG.debug("poisson_noise() |  noised ramp shape={:}, dtype={:} ".format(noised_ramp.shape, noised_ramp.dtype))
-    return noised_ramp
-
 def add_poisson_noise(original_ramp, mask, gain):
     """
     Add Poisson noise on all integration of a det_image data cube.
@@ -372,6 +304,7 @@ def add_poisson_noise(original_ramp, mask, gain):
     # create the hypercube of differences in electron
     #  I duplicate the  first image of difference
     frame_differences = np.diff(original_ramp, axis=1)
+    print(frame_differences.shape)
     # diff = original_ramp[:,1:,:,:] - original_ramp[:,0:-1,:,:] equivalent
     first_difference = frame_differences[0,0,:,:]
     first_difference = first_difference.reshape([1, 1, nb_y, nb_x])
@@ -408,7 +341,39 @@ def add_poisson_noise(original_ramp, mask, gain):
     return noised_ramp
 
 ############
-def add_background(original_ramp, background, time=0.159, gain=5.5):
+def reshape_background(original_ramp, background, time=0.159):
+    """
+    Reshapes background on all integration of a det_image data cube.
+    BEWARE works only for one integration
+
+    Parameters
+    ----------
+    original_ramp:
+                 Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
+    background:
+        np.array(float) - image of the background, DN
+
+
+    Returns
+    -------
+    data cube of background (this is not a ramp difference, this is the full ramp)
+
+    """
+    # get the shape and check that the cube is 4D
+    (nb_integrations, nb_frames, nb_y, nb_x) =  original_ramp.shape
+    if (nb_integrations != 1): return
+    # create the hypercube of differences in electron
+    #
+    imagette = background*time
+    cube0 = np.tile(imagette, nb_frames).reshape([nb_y,nb_frames,nb_x])
+    bckg_cube = cube0.swapaxes(1,0)
+    bckg_cube = np.cumsum(bckg_cube, axis=0)
+    bckg_cube = bckg_cube.reshape([1,nb_frames, nb_y, nb_x])
+    
+    return bckg_cube
+
+
+def add_background(original_ramp, reshaped_background):
     """
     Add background on all integration of a det_image data cube.
     BEWARE works only for one integration
@@ -418,27 +383,22 @@ def add_background(original_ramp, background, time=0.159, gain=5.5):
     original_ramp:
                  Original ramp from MIRISim det_image in DN. Dimensions: (nb_integrations, nb_frames, nb_y, nb_x)
     background:
-        np.array(float) - image of the background, electron/second
+        np.array(float) - 4D reshaped background, DN
 
-    gain:
-        float - Gain in electron/DN
 
     Returns
     -------
     data cube with background added (this is not a ramp difference, this is the full ramp)
 
     """
-    # get the shape and check that the cube is 4D
-    (nb_integrations, nb_frames, nb_y, nb_x) =  original_ramp.shape
-    if (nb_integrations != 1): return
-    # create the hypercube of differences in electron
-    #
-    imagette = background*time/gain
-    cube0 = np.tile(imagette, nb_frames).reshape([nb_y,nb_frames,nb_x])
-    cube1 = cube0.swapaxes(1,0)
-    cube1 = np.cumsum(cube1, axis=0)
-    new_ramp = original_ramp + cube1.reshape([1,nb_frames, nb_y, nb_x])
+    new_ramp = original_ramp + reshaped_background
     new_ramp = np.float32(new_ramp)
     LOG.debug("add_background() |  new ramp shape={:}, dtype={:} ".format(new_ramp.shape, new_ramp.dtype))
+
     return new_ramp
+
+
+
+
+
 

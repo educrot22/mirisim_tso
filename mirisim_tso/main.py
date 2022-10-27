@@ -26,7 +26,7 @@ from . import version
 LOG = logging.getLogger(__name__)
 
 
-def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=None, background=None, obs_time=None):
+def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gain=None, mask=None, background=None, obs_time=None):
     """
     Apply post treatment to a single simulation folder.
 
@@ -78,20 +78,49 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
     LOG.debug("main() | Value check for the original ramp: min={} / max={}".format(original_ramp.min(), original_ramp.max()))
 
     frame_time = header["TFRAME"]  # or TGROUP
-    gain       = header["GAINCF"]  # for the background
+    cst_gain   = header["GAINCF"]  # for the background
     
     metadatas = {'history': ["Post processing with MIRISim TSO v{}".format(version.__version__)], 'time_0' : t_0,
                  'phase': phase, 'TSOVISIT': True} # 'TSOVISIT': 'T' RG 28 nov 2021
 
     new_ramp = original_ramp.copy()
 
-    signal = utils.read_illum_model(illum_models_filename, gain)
-    
+    if v_gain is None:
+        gain_file = config_dict["CDP"]["gain_file"]
+        gain_mode = config_dict["CDP"]["mode"]
+        v_gain = utils.read_gain(gain_file, gain_mode)
+
+    signal = utils.read_illum_model(illum_models_filename, v_gain)
+
+
     # Add background before all the other effects are applied
     bck_filename = config_dict["background"]["filename"]
     if bck_filename is not None:
         metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
-        new_ramp = effects.add_background(new_ramp, background, time=frame_time, gain=gain)
+        new_bckg = effects.reshape_background(new_ramp, background, time=frame_time)
+
+        if 'noise' in config_dict:
+            if config_dict["noise"]["active"]:
+                if mask is None:
+                    mask_file = config_dict["CDP"]["mask_file"]
+                    mode = config_dict["CDP"]["mode"]
+                    mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
+                metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
+                bckg_noise = effects.add_poisson_noise(new_bckg, mask, gain=cst_gain)
+                new_ramp = effects.add_poisson_noise(new_ramp, mask, v_gain)
+        
+                new_ramp = effects.add_background(new_ramp, new_bckg)
+        else:
+            new_ramp = effects.add_background(new_ramp, new_bckg)
+    if bck_filename is None:   
+        if 'noise' in config_dict:
+            if config_dict["noise"]["active"]:
+                if mask is None:
+                    mask_file = config_dict["CDP"]["mask_file"]
+                    mode = config_dict["CDP"]["mode"]
+                    mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
+                metadatas['history'].append("MIRISim TSO: Add Poisson Noise")        
+                new_ramp = effects.add_poisson_noise(new_ramp, mask, v_gain)
 
     if config_dict["response_drift"]["active"]:
         metadatas['history'].append("MIRISim TSO: Add Response drift")
@@ -112,27 +141,8 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, mask=
         metadatas['history'].append("MIRISim TSO: Add Anneal Recovery")
         ramp_difference = effects.anneal_recovery(original_ramp, t_0, frame_time, config_dict)
         new_ramp += ramp_difference
-
-
-    # Apply poisson noise after all the other effects are applied
-    if config_dict["noise"]["active"]:
-        if mask is None:
-            mask_file = config_dict["CDP"]["mask_file"]
-            mode = config_dict["CDP"]["mode"]
-            mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
-        metadatas['history'].append("MIRISim TSO: Add Poisson Noise old way")
-        new_ramp = effects.poisson_noise(new_ramp, mask, gain)
         
-    # Apply poisson noise after all the other effects are applied
-    #import pdb
-    if 'noise_bis' in config_dict:
-        if config_dict["noise_bis"]["active"]:
-            if mask is None:
-                mask_file = config_dict["CDP"]["mask_file"]
-                mode = config_dict["CDP"]["mode"]
-                mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
-            metadatas['history'].append("MIRISim TSO: Add Poisson Noise bis")
-            new_ramp = effects.add_poisson_noise(new_ramp, mask, gain)
+
     #pdb.set_trace()
     LOG.debug("main() | Value check for the new ramp: min={} / max={}".format(new_ramp.min(), new_ramp.max()))
 
@@ -178,8 +188,10 @@ def sequential_lightcurve_post_treatment(conf):
     input_folder = config_dict["simulations"]["input_dir"]
     filtername = config_dict["simulations"]["filtername"]
     mask_file = config_dict["CDP"]["mask_file"]
+    gain_file = config_dict["CDP"]["gain_file"]
     mode = config_dict["CDP"]["mode"]
-    mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
+    mask = utils.read_mask(mask_file, mode)
+    variable_gain = utils.read_gain(gain_file, mode)  # done 16 nov 2021 RG & AD
     #
     background = None
     bck_filename = config_dict["background"]["filename"]
@@ -235,7 +247,7 @@ def sequential_lightcurve_post_treatment(conf):
         simu_i += 1
         LOG.debug(' ')
         LOG.debug("Run simulation {}: {:.1f}%".format(simulation, (simu_i*100/nb_simulations)))
-        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, mask=mask, background=background, obs_time=simulation_obs_time[simulation])
+        single_simulation_post_treatment(simulation, simulation_start_time[simulation], simulation_orbital_phase[simulation], config_dict, v_gain=variable_gain, mask=mask, background=background, obs_time=simulation_obs_time[simulation])
         if (simu_i == nb_simulations):
             print('yoho')
             break
