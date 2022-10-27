@@ -172,23 +172,11 @@ active  = true
 |active | bool | Activate poisson noise
 |=======================================================================
 
-=== noise_bis
+=== noise
 Add Poisson noise to the observation.
 It is done with a different algorithm than the precedent, see annex.
 This keyword can be omitted from the ini file.
 
-[source, ini]
-----
-[noise_bis]
-active  = true
-----
-
-
-[cols="<,<,<",options="header",]
-|=======================================================================
-|Parameter |Type / Unit | Description
-|active | bool | Activate poisson noise
-|=======================================================================
 
 
 === background
