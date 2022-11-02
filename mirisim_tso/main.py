@@ -106,7 +106,7 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
                     mode = config_dict["CDP"]["mode"]
                     mask = utils.read_mask(mask_file, mode)  # done 16 nov 2021 RG & AD
                 metadatas['history'].append("MIRISim TSO: Add Poisson Noise")
-                bckg_noise = effects.add_poisson_noise(new_bckg, mask, gain=cst_gain)
+                new_bckg = effects.add_poisson_noise(new_bckg, mask, gain=cst_gain)
                 new_ramp = effects.add_poisson_noise(new_ramp, mask, v_gain)
         
                 new_ramp = effects.add_background(new_ramp, new_bckg)
