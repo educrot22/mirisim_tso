@@ -86,7 +86,6 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
     new_ramp = original_ramp.copy()
 
 
-
     if v_gain is None:
         vg_bool = config_dict["gain"]["variable_gain"]
         if vg_bool is True:
@@ -95,6 +94,8 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
             v_gain = utils.read_gain(gain_file, gain_mode)
         else:
             v_gain = None
+    else:
+        vg_bool = v_gain
 
     signal = utils.read_illum_model(illum_models_filename, v_gain)
 
