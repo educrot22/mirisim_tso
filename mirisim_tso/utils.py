@@ -75,7 +75,6 @@ def read_illum_model(illum_model_filename, gain):
         # Add reference pixel to illum models to match size of det_images
         (ny, nx) = illumination.shape
         print(illumination.shape)
-        print(gain.shape)
 
         slope_array = np.zeros((ny, nx+4))
         slope_array[:, 4:] = illumination / gain

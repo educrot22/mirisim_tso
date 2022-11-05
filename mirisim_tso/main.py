@@ -85,8 +85,8 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
 
     new_ramp = original_ramp.copy()
 
-
     if v_gain is None:
+        print("V gain is None")
         vg_bool = config_dict["gain"]["variable_gain"]
         if vg_bool is True:
             gain_file = config_dict["CDP"]["gain_file"]
@@ -95,12 +95,13 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
         else:
             v_gain = None
     else:
-        vg_bool = v_gain
+        vg_bool = True
+        print("Vg bool is True")
 
-    signal = utils.read_illum_model(illum_models_filename, v_gain)
 
     if vg_bool is True:
         # Add background before all the other effects are applied
+        signal = utils.read_illum_model(illum_models_filename, v_gain)
         bck_filename = config_dict["background"]["filename"]
         if bck_filename is not None:
             metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
@@ -129,10 +130,12 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
                     metadatas['history'].append("MIRISim TSO: Add Poisson Noise")        
                     new_ramp = effects.add_poisson_noise(new_ramp, mask, v_gain)
     else:
+        signal = utils.read_illum_model(illum_models_filename, cst_gain)
         bck_filename = config_dict["background"]["filename"]
         if bck_filename is not None:
             metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
-            new_ramp = effects.add_background(new_ramp, background, time=frame_time, gain=cst_gain)
+            new_bckg = effects.reshape_background(new_ramp, background, time=frame_time)
+            new_ramp = effects.add_background(new_ramp, new_bckg)
 
         if config_dict["noise"]["active"]:
             if mask is None:
@@ -214,10 +217,13 @@ def sequential_lightcurve_post_treatment(conf):
     mask = utils.read_mask(mask_file, mode)
 
     vg_bool = config_dict["gain"]["variable_gain"]
+    print(vg_bool)
     if vg_bool is True:
         variable_gain = utils.read_gain(gain_file, mode)  # done 16 nov 2021 RG & AD
+        print('reading variable gain')
     else:
         variable_gain = None
+        print('no variable gain')
     #
     background = None
     bck_filename = config_dict["background"]["filename"]
