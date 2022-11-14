@@ -132,11 +132,15 @@ def single_simulation_post_treatment(simulation_folder, t_0, phase,  conf, v_gai
     else:
         signal = utils.read_illum_model(illum_models_filename, cst_gain)
         bck_filename = config_dict["background"]["filename"]
+        print(bck_filename)
         if bck_filename is not None:
+            print('adding background')
             metadatas['history'].append("MIRISim TSO: Add Background {}".format(bck_filename))
             new_bckg = effects.reshape_background(new_ramp, background, time=frame_time)
             new_ramp = effects.add_background(new_ramp, new_bckg)
-
+        else:
+            print('Not adding background')
+              
         if config_dict["noise"]["active"]:
             if mask is None:
                 mask_file = config_dict["CDP"]["mask_file"]
